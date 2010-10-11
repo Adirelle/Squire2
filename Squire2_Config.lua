@@ -14,7 +14,7 @@ local panelButton
 
 local CheckButton_OnClick, CheckButton_OnEnter, CheckButton_OnLeave
 
-local MACRO_NAME, MACRO_ICON = "Squire2", 1
+local MACRO_NAME, MACRO_ICON = "Squire2", 251
 
 function addon:InitializeConfig()
 	
