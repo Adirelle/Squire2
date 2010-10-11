@@ -1,0 +1,13 @@
+## Interface: 40000
+
+## Title: Squire2 Config
+## Notes: Squire2 configuration interface.
+## Author: Adirelle
+## Version: @project-version@
+## SavedVariables: Squire2DB
+## X-Date: @project-date-iso@
+## Dependencies: Squire2
+## LoadOnDemand: 1
+
+..\Squire2\Squire2_Config.lua
+
