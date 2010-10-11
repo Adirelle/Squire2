@@ -35,6 +35,7 @@ local DEFAULTS = {
 	profile = {
 		autoDismount = true,
 		safeDismount = true,
+		groundModifier = "any",
 	},
 	char = { mounts = { ['*'] = true } },
 }
@@ -95,7 +96,7 @@ local spellNames = setmetatable({}, {__index = function(t, id)
 end})
 local knownSpells = setmetatable({}, {__index = function(t,id)
 	local name = spellNames[id]
-	local isKnown = name and GetSpellInfo(name) and true or false
+	local isKnown = name and GetSpellInfo(name) or false
 	Debug(name, 'is', isKnown and 'known' or 'unknown')
 	t[id] = isKnown
 	return isKnown
@@ -143,8 +144,13 @@ function addon:COMPANION_UPDATE(event, type)
 end
 
 ----------------------------------------------
--- Core
+-- Core logic
 ----------------------------------------------
+
+local mountItems = {
+	38302, -- Ruby Beacon of the Dragon Queen (quest "On Ruby Wings" in Dragonblight)
+	37860, 37815, 37859, -- Drake essences in Occulus
+}
 
 local function UseSpell(id)
 	return id and (knownMounts[id] or knownSpells[id]) and IsUsableSpell(id) and id
@@ -152,19 +158,34 @@ end
 
 local function GetMovingAction() end
 
+local groundModifierCheck = {
+	none = function() return false end,
+	any = IsModifierKeyDown,
+	control = IsControlKeyDown,
+	alt = IsAltKeyDown,
+	shift = IsShiftKeyDown,
+	rightButton = function(button) return button == 'RightButton' end,
+}
+
+local function EnforceGroundMount(button)
+	return groundModifierCheck[addon.db.profile.groundModifier](button)
+end
+
 if playerClass == 'DRUID' then
 	local t = {}
-	function GetMovingAction(inCombat)
+	function GetMovingAction(groundOnly, inCombat)
 		wipe(t)
 		-- Spell #1066: Aquatic form
 		if knownSpells[1066] then
 			t[#t+1] = "[swimming]"..spellNames[1066]
 		end
-		-- Spell #33943: Flight form
-		-- Spell #40120: Swift Flight form
-		local flightForm = (knownSpells[40120] and 40120) or (knownSpells[33943] and 33943)
-		if flightForm then
-			t[#t+1] = "[nocombat,flyable]"..spellNames[flightForm]
+		if not groundOnly then
+			-- Spell #33943: Flight form
+			-- Spell #40120: Swift Flight form
+			local flightForm = knownSpells[40120] or knownSpells[33943]
+			if flightForm then
+				t[#t+1] = "[nocombat,flyable]"..flightForm
+			end
 		end
 		-- Spell #783: Travel form
 		if knownSpells[783] then
@@ -196,14 +217,14 @@ elseif playerClass == 'HUNTER' then
 
 end
 
-local function GetInCombatAction()
+local function GetInCombatAction(button)
 	if addon.db.char.combatAction then
 		local actionType, actionData = strsplit(':', addon.db.char.combatAction)
 		actionData = tonumber(actionData) or actionData
 		Debug('Combat Action:', actionType, actionData)
 		return actionType, actionData
 	end
-	return GetMovingAction(true)
+	return GetMovingAction(button, true)
 end
 
 local flyingMounts = addon.flyingMounts
@@ -227,12 +248,7 @@ function ChooseMount(flying, ignoreHistory)
 	end
 end
 
-local mountItems = {
-	38302, -- Ruby Beacon of the Dragon Queen (quest "On Ruby Wings" in Dragonblight)
-	37860, 37815, 37859, -- Drake essences in Occulus
-}
-
-local function GetOutOfCombatAction()
+local function GetOutOfCombatAction(groundOnly)
 	Debug('GetOutOfCombatAction', 'Mounted=', IsMounted(), 'Flying=', IsFlying(), 'FlyableArea=', IsFlyableArea(), 'Speed=', GetUnitSpeed("player"), 'Swimming=', IsSwimming())
 	-- Dismount
 	if IsMounted() or UnitInVehicle("player") then
@@ -244,7 +260,7 @@ local function GetOutOfCombatAction()
 	end
 	-- Moving action if moving
 	if GetUnitSpeed("player") > 0 then
-		return GetMovingAction()
+		return GetMovingAction(groundOnly)
 	end
 	-- If swimming, Abyssal Seahorse in Vashj'ir, Sea Turtle or moving action
 	if IsSwimming() then
@@ -255,20 +271,22 @@ local function GetOutOfCombatAction()
 		elseif knownMounts[64731] then
 			return 'spell', 64731
 		else
-			return GetMovingAction()
+			return GetMovingAction(groundOnly)
 		end
 	end
-	-- Flying mount in flyable area
-	if IsFlyableArea() then
-		local mount = ChooseMount(true)
-		if mount then
-			return 'spell', mount
+	if not groundOnly then
+		-- Flying mount in flyable area
+		if IsFlyableArea() then
+			local mount = ChooseMount(true)
+			if mount then
+				return 'spell', mount
+			end
 		end
-	end
-	-- Items that call mounts
-	for i, id in pairs(mountItems) do
-		if GetItemCount(id) > 0 and IsUsableItem(id) then
-			return 'item', id
+		-- Items that call flying mounts
+		for i, id in pairs(mountItems) do
+			if GetItemCount(id) > 0 and IsUsableItem(id) then
+				return 'item', id
+			end
 		end
 	end
 	-- Ground mount
@@ -278,13 +296,14 @@ local function GetOutOfCombatAction()
 	end
 end
 
-function addon:SetupButton(inCombat)
+function addon:SetupButton(inCombat, button)
 	Debug('SetupButton', inCombat)
 	local actionType, actionData
+	local groundOnly = EnforceGrountMount(button)
 	if inCombat then
-		actionType, actionData = GetInCombatAction()
+		actionType, actionData = GetInCombatAction(groundOnly)
 	else
-		actionType, actionData = GetOutOfCombatAction()
+		actionType, actionData = GetOutOfCombatAction(groundOnly)
 	end
 	if actionType and actionData then
 		local dataName = actionType

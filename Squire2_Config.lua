@@ -124,6 +124,17 @@ function addon.GetOptions()
 					end,
 					order = 10,
 				},
+				keybinding = {
+					name = L["Squire2 binding"],
+					desc = L["Select a binding to use Squire2 without a macro"],
+					type = 'keybinding',
+					get = function() return GetBindingKey("CLICK Squire2Button") end,
+					set = function(_, value)
+						SetBinding(value, "CLICK Squire2Button")
+						SaveBindings(GetCurrentBindingSet())
+					end,
+					order = 11,
+				},
 				autoDismount = {
 					name = L['Dismount automatically'],
 					desc = L['Check this to have Squire2 automatically dismount you.'],
@@ -141,12 +152,28 @@ function addon.GetOptions()
 					disabled = function() return not addon.db.profile.autoDismount end,
 					order = 30,
 				},
+				groundModifier = {
+					name = L['Ground modifier'],
+					desc = L['Select a modifier to enforce the use of a ground mount.'],
+					type = 'select',
+					get = function() return addon.db.profile.groundModifier end,
+					set = function(_, value) addon.db.profile.groundModifier = value end,
+					values = {
+						none = L['None'],
+						any = L['Any'],
+						control = CTRL_KEY,
+						alt = ALT_KEY,
+						shift = SHIFT_KEY,
+						rightButton = L['Right mouse button'],
+					},
+					order = 40,
+				},
 				combatAction = {
 					name = L['Combat action'],
-					desc = L['Drag an drop any action there to define the action to do it in combat instead of mounting.'],
+					desc = L['Drag an drop any action there to define the action to do it in combat instead of mounting. Right-click to clear.'],
 					type = 'input',
 					control = 'ActionSlot',
-					order = 40,
+					order = 50,
 					get = function() return addon.db.char.combatAction end,
 					set = function(_, value) addon.db.char.combatAction = value end,
 					validate = function(_, value)
