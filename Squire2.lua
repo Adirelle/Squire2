@@ -4,10 +4,8 @@ Copyright 2010 Adirelle (adirelle@tagada-team.net)
 All rights reserved.
 --]]
 
-local addonName, ns = ...
-
-local addon = LibStub('AceAddon-3.0'):NewAddon(addonName, 'AceEvent-3.0', 'AceHook-3.0')
-addon.L = ns.L
+local addonName, addon = ...
+_G[addonName] = addon
 
 --------------------------------------------------------------------------------
 -- Debug stuff
@@ -21,7 +19,6 @@ if tekDebug then
 else
 	function Debug() end
 end
-ns.Debug = Debug
 addon.Debug = Debug
 
 --------------------------------------------------------------------------------
@@ -42,15 +39,27 @@ local DEFAULTS = {
 	char = { mounts = { ['*'] = true } },
 }
 
-function addon:OnInitialize()
+local eventHandler = CreateFrame("Frame")
+eventHandler:SetScript('OnEvent', function(_, event, ...) return addon[event](addon, event, ...) end)
+
+function addon:ADDON_LOADED(_, name)
+	if name ~= addonName then return end
 	self.db = LibStub('AceDB-3.0'):New(addonName.."DB", DEFAULTS, true)
 
 	local button = CreateFrame("Button", "Squire2Button", nil, "SecureActionButtonTemplate")
-	button:Disable()
 	button:RegisterForClicks("AnyUp")
 	button:SetScript("PreClick", self.ButtonPreClick)
 	self.button = button
+	
+	eventHandler:RegisterEvent('PLAYER_REGEN_DISABLED')
+	eventHandler:RegisterEvent('COMPANION_UPDATE')
+	eventHandler:RegisterEvent('COMPANION_LEARNED')
+	self.COMPANION_UNLEARNED = self.COMPANION_LEARNED
+	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
+	
+	self:COMPANION_LEARNED('OnEnable', 'MOUNT')
 end
+eventHandler:RegisterEvent('ADDON_LOADED')
 
 function addon:SpellBook_UpdateCompanionsFrame()
 	if SpellBookCompanionsFrame.mode == 'MOUNT' then
@@ -59,20 +68,6 @@ function addon:SpellBook_UpdateCompanionsFrame()
 			self:InitializeConfig()
 		end
 	end
-end
-
---------------------------------------------------------------------------------
--- Enabling and event handling
---------------------------------------------------------------------------------
-
-function addon:OnEnable()
-	self.button:Enable()
-	self:RegisterEvent('PLAYER_REGEN_DISABLED')
-	self:RegisterEvent('COMPANION_UPDATE')
-	self:RegisterEvent('COMPANION_LEARNED')
-	self:RegisterEvent('COMPANION_UNLEARNED', 'COMPANION_LEARNED')
-	self:SecureHook('SpellBook_UpdateCompanionsFrame')
-	self:COMPANION_LEARNED('OnEnable', 'MOUNT')
 end
 
 function addon.ButtonPreClick()
@@ -192,13 +187,16 @@ elseif playerClass == 'HUNTER' then
 end
 
 local function GetInCombatAction()
-	if addon.db.char.combatActionType then
-		return addon.db.char.combatActionType, addon.db.char.combatActionData
+	if addon.db.char.combatAction then
+		local actionType, actionData = strsplit(':', addon.db.char.combatAction)
+		actionData = tonumber(actionData) or actionData
+		Debug('Combat Action:', actionType, actionData)
+		return actionType, actionData
 	end
 	return GetMovingAction(true)
 end
 
-local flyingMounts = ns.flyingMounts
+local flyingMounts = addon.flyingMounts
 function ChooseMount(flying, ignoreHistory)
 	Debug('ChooseMount, flying=', flying, 'ignoreHistory=', ignoreHistory)
 	local foundSome = false

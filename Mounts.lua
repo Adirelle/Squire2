@@ -4,10 +4,10 @@ Copyright 2010 Adirelle (adirelle@tagada-team.net)
 All rights reserved.
 --]]
 
-local _, ns = ...
+local _, addon = ...
 
 -- List courtesy of Yssaril
-ns.flyingMounts = {
+addon.flyingMounts = {
 		[66087] = "Silver Covenant Hippogryph",
 		[32242] = "Swift Blue Gryphon",
 		[32244] = "Blue Wind Rider",
