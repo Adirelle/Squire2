@@ -70,8 +70,9 @@ function addon:SpellBook_UpdateCompanionsFrame()
 	end
 end
 
-function addon.ButtonPreClick()
+function addon.ButtonPreClick(...)
 	if not InCombatLockdown() then
+		Debug("PreClick", ...)
 		addon:SetupButton(false)
 	end
 end
@@ -156,7 +157,7 @@ if playerClass == 'DRUID' then
 		-- Spell #783: Travel form
 		-- Spell #1066: Aquatic form
 		-- Spell #33943: Flight form
-		-- Spell #40120: Swift Fligh form
+		-- Spell #40120: Swift Flight form
 		-- Flight Form if OoC in flyable area, else Travel Form
 		local form = (not inCombat and IsFlyableArea() and (UseSpell(40120) or UseSpell(33943))) or (knownSpells[783] and 783)
 		if form then
@@ -220,8 +221,12 @@ end
 local function GetOutOfCombatAction()
 	Debug('GetOutOfCombatAction', 'Mounted=', IsMounted(), 'Flying=', IsFlying(), 'FlyableArea=', IsFlyableArea(), 'Speed=', GetUnitSpeed("player"), 'Swimming=', IsSwimming())
 	-- Dismount
-	if IsMounted() and addon.db.profile.autoDismount and not (IsFlying() and addon.db.profile.safeDismount) then
-		return 'macrotext', '/dismount'
+	if IsMounted() then
+		if addon.db.profile.autoDismount and not (IsFlying() and addon.db.profile.safeDismount) then
+			return 'macrotext', '/dismount'
+		else
+			return
+		end
 	end
 	-- Moving action if moving
 	if GetUnitSpeed("player") > 0 then
@@ -261,7 +266,6 @@ function addon:SetupButton(inCombat)
 	else
 		actionType, actionData = GetOutOfCombatAction()
 	end
-	Debug('=>', actionType, actionData)
 	if actionType and actionData then
 		local dataName = actionType
 		if actionType == 'macrotext' then
@@ -269,8 +273,11 @@ function addon:SetupButton(inCombat)
 		elseif actionType == 'spell' then
 			actionData = spellNames[actionData]
 		end
+		Debug('=>', actionType, actionData)
 		self.button:SetAttribute('type', actionType)
 		self.button:SetAttribute(dataName, actionData)
+	else
+		self.button:SetAttribute('type', nil)
 	end
 end
 
