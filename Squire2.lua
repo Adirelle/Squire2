@@ -158,19 +158,6 @@ end
 
 local function GetMovingAction() end
 
-local groundModifierCheck = {
-	none = function() return false end,
-	any = IsModifierKeyDown,
-	control = IsControlKeyDown,
-	alt = IsAltKeyDown,
-	shift = IsShiftKeyDown,
-	rightButton = function(button) return button == 'RightButton' end,
-}
-
-local function EnforceGroundMount(button)
-	return groundModifierCheck[addon.db.profile.groundModifier](button)
-end
-
 if playerClass == 'DRUID' then
 	local t = {}
 	function GetMovingAction(groundOnly, inCombat)
@@ -296,10 +283,18 @@ local function GetOutOfCombatAction(groundOnly)
 	end
 end
 
+local groundModifierCheck = {
+	none = function() return false end,
+	any = IsModifierKeyDown,
+	control = IsControlKeyDown,
+	alt = IsAltKeyDown,
+	shift = IsShiftKeyDown,
+}
+
 function addon:SetupButton(inCombat, button)
 	Debug('SetupButton', inCombat)
 	local actionType, actionData
-	local groundOnly = EnforceGrountMount(button)
+	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier](button)
 	if inCombat then
 		actionType, actionData = GetInCombatAction(groundOnly)
 	else

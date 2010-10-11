@@ -164,7 +164,6 @@ function addon.GetOptions()
 						control = CTRL_KEY,
 						alt = ALT_KEY,
 						shift = SHIFT_KEY,
-						rightButton = L['Right mouse button'],
 					},
 					order = 40,
 				},
