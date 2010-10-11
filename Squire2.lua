@@ -153,20 +153,29 @@ end
 local function GetMovingAction() end
 
 if playerClass == 'DRUID' then
+	local t = {}
 	function GetMovingAction(inCombat)
-		-- Spell #783: Travel form
+		wipe(t)
 		-- Spell #1066: Aquatic form
+		if knownSpells[1066] then
+			t[#t+1] = "[swimming]"..spellNames[1066]
+		end
 		-- Spell #33943: Flight form
 		-- Spell #40120: Swift Flight form
-		-- Flight Form if OoC in flyable area, else Travel Form
-		local form = (not inCombat and IsFlyableArea() and (UseSpell(40120) or UseSpell(33943))) or (knownSpells[783] and 783)
-		if form then
-			-- Use Aquatic Form if swimming
-			if UseSpell(1066) then
-				return 'macrotext', format([[/cast [swimming] %s; %s]], spellNames[1066], spellNames[form])
-			else
-				return 'spell', form
-			end
+		local flightForm = (knownSpells[40120] and 40120) or (knownSpells[33943] and 33943)
+		if flightForm then
+			t[#t+1] = "[nocombat,flyable]"..spellNames[flightForm]
+		end
+		-- Spell #783: Travel form
+		if knownSpells[783] then
+			t[#t+1] = "[outdoors]"..spellNames[783]
+		end
+		-- Spell #768: Cat form
+		if knownSpells[768] then
+			t[#t+1] = spellNames[768]
+		end
+		if t[1] then
+			return 'macrotext', "/cast "..table.concat(t, ';')
 		end
 	end
 
@@ -218,12 +227,17 @@ function ChooseMount(flying, ignoreHistory)
 	end
 end
 
+local mountItems = {
+	38302, -- Ruby Beacon of the Dragon Queen (quest "On Ruby Wings" in Dragonblight)
+	37860, 37815, 37859, -- Drake essences in Occulus
+}
+
 local function GetOutOfCombatAction()
 	Debug('GetOutOfCombatAction', 'Mounted=', IsMounted(), 'Flying=', IsFlying(), 'FlyableArea=', IsFlyableArea(), 'Speed=', GetUnitSpeed("player"), 'Swimming=', IsSwimming())
 	-- Dismount
-	if IsMounted() then
+	if IsMounted() or UnitInVehicle("player") then
 		if addon.db.profile.autoDismount and not (IsFlying() and addon.db.profile.safeDismount) then
-			return 'macrotext', '/dismount'
+			return 'macrotext', IsMounted() and '/dismount' or '/exitvehicle'
 		else
 			return
 		end
@@ -232,7 +246,7 @@ local function GetOutOfCombatAction()
 	if GetUnitSpeed("player") > 0 then
 		return GetMovingAction()
 	end
-	-- If swimming, Abyssal Seahorse in Vashj'ir or moving action
+	-- If swimming, Abyssal Seahorse in Vashj'ir, Sea Turtle or moving action
 	if IsSwimming() then
 		-- Spell #75207: Abyssal Seahorse
 		if knownMounts[75207] and GetMapInfo():match('^Vashjir') then
@@ -249,6 +263,12 @@ local function GetOutOfCombatAction()
 		local mount = ChooseMount(true)
 		if mount then
 			return 'spell', mount
+		end
+	end
+	-- Items that call mounts
+	for i, id in pairs(mountItems) do
+		if GetItemCount(id) > 0 and IsUsableItem(id) then
+			return 'item', id
 		end
 	end
 	-- Ground mount
