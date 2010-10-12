@@ -23,7 +23,7 @@ externals:
     url: git://git.wowace.com/wow/ace-gui-3-0-action-slot-widgets/mainline.git
     tag: latest
   libs/LibMounts-1.0:
-    url: svn://svn.wowace.com/wow/ace3/mainline/trunk/LibMounts-1.0
+    url: svn://svn.wowace.com/wow/libmounts-1-0/mainline/trunk/LibMounts-1.0
     tag: latest
 
 move-folders:
