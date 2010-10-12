@@ -1,0 +1,33 @@
+package-as: Squire2
+
+externals:
+  libs/LibStub:
+    url: svn://svn.wowace.com/wow/libstub/mainline/trunk
+    tag: latest
+  libs/CallbackHandler-1.0:
+    url: svn://svn.wowace.com/wow/callbackhandler/mainline/trunk/CallbackHandler-1.0
+    tag: latest
+  libs/AceDB-3.0:
+    url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceDB-3.0
+    tag: latest
+  libs/AceEvent-3.0:
+    url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceEvent-3.0
+    tag: latest
+  libs/AceGUI-3.0:
+    url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceGUI-3.0
+    tag: latest
+  libs/AceConfig-3.0:
+    url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceConfig-3.0
+    tag: latest
+  libs/AceGUI-3.0-ActionSlotWidgets:
+    url: git://git.wowace.com/wow/ace-gui-3-0-action-slot-widgets/mainline.git
+    tag: latest
+  libs/LibMounts-1.0:
+    url: svn://svn.wowace.com/wow/ace3/mainline/trunk/LibMounts-1.0
+    tag: latest
+
+move-folders:
+  Squire2/Squire2_Config: Squire2_Config
+
+
+
