@@ -1,0 +1,12 @@
+Squire2 is basically Squire rewritten from scratch for 4.0/Cataclysm. I felt the Squire code
+became unsuitable to handle the several changes to mounts ; both mount features and API have
+been slightly changed.
+
+This is a work in progress. Most of core features are in but some bugs and glitches still need to be ironed out.
+
+There is no much visible differences from Squire :
+* Dos not dynamically update the macro anymore, do it on demand instead.
+* Configuration is done from the "Mounts" tab of the spellbook.
+* Use Ace3 for configuration UI.
+* Accept items and macros, as well as spells, as combat action.
+
