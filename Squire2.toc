@@ -6,7 +6,7 @@
 ## Version: @project-version@
 ## SavedVariables: Squire2DB
 ## X-Date: @project-date-iso@
-## OptionalDeps: Ace3, tekDebug
+## OptionalDeps: Ace3, LibMounts-1.0, tekDebug
 ## LoadManagers: AddonLoader
 ## X-LoadOn-Always: delayed
 
@@ -14,9 +14,9 @@
 libs\LibStub\LibStub.lua
 libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
 libs\AceDB-3.0\AceDB-3.0.xml
+libs\LibMounts-1.0\lib.xml
 #@end-no-lib-strip@
 
 Localization.lua
-Mounts.lua
 Squire2.lua
 

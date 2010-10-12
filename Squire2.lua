@@ -214,13 +214,13 @@ local function GetInCombatAction(button)
 	return GetMovingAction(button, true)
 end
 
-local flyingMounts = addon.flyingMounts
+local flyingMounts = LibStub("LibMounts-1.0"):GetMountList("air")
 function ChooseMount(flying, ignoreHistory)
 	Debug('ChooseMount, flying=', flying, 'ignoreHistory=', ignoreHistory)
 	local foundSome = false
 	for id in pairs(knownMounts) do
-		if UseSpell(id) and (not flying or flyingMounts[id]) then
-			if addon.db.char.mounts[id] and not mountHistory[id] then
+		if addon.db.char.mounts[id] and UseSpell(id) and (not flying or flyingMounts[id]) then
+			if not mountHistory[id] then
 				Debug('=> mount #', id, 'selected')
 				return id
 			else
@@ -236,7 +236,7 @@ function ChooseMount(flying, ignoreHistory)
 end
 
 local function GetOutOfCombatAction(groundOnly)
-	Debug('GetOutOfCombatAction', 'Mounted=', IsMounted(), 'Flying=', IsFlying(), 'FlyableArea=', IsFlyableArea(), 'Speed=', GetUnitSpeed("player"), 'Swimming=', IsSwimming())
+	Debug('GetOutOfCombatAction', 'Mounted=', IsMounted(), 'Flying=', IsFlying(), 'FlyableArea=', IsFlyableArea(), 'Speed=', GetUnitSpeed("player"), 'Swimming=', IsSwimming(), 'groundOnly=', groundOnly)
 	-- Dismount
 	if IsMounted() or UnitInVehicle("player") then
 		if addon.db.profile.autoDismount and not (IsFlying() and addon.db.profile.safeDismount) then
