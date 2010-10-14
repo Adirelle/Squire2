@@ -15,5 +15,5 @@
 ..\Squire2\libs\AceGUI-3.0-ActionSlotWidgets\widget.xml
 #@end-no-lib-strip@
 
-..\Squire2\Squire2_Config.lua
+..\Squire2\Config.lua
 
