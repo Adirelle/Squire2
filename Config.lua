@@ -104,6 +104,8 @@ end
 -- Options
 --------------------------------------------------------------------------------
 
+local SQUIRE2_BINDING = "CLICK Squire2Button:LeftButton"
+
 local options
 function addon.GetOptions()
 	if not options then
@@ -128,9 +130,9 @@ function addon.GetOptions()
 					name = L["Squire2 binding"],
 					desc = L["Select a binding to use Squire2 without a macro"],
 					type = 'keybinding',
-					get = function() return GetBindingKey("CLICK Squire2Button") end,
+					get = function() return GetBindingKey(SQUIRE2_BINDING) end,
 					set = function(_, value)
-						SetBinding(value, "CLICK Squire2Button")
+						SetBinding(value, SQUIRE2_BINDING)
 						SaveBindings(GetCurrentBindingSet())
 					end,
 					order = 11,
