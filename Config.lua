@@ -121,7 +121,7 @@ function addon.GetOptions()
 					func = function()
 						local index = GetMacroIndexByName(MACRO_NAME)
 						if index == 0 then
-							index = CreateMacro(MACRO_NAME, MACRO_ICON, "/click Squire2Button", 0)
+							index = CreateMacro(MACRO_NAME, MACRO_ICON, "/click [button:2] Squire2Button RightButton; Squire2Button", 0)
 						end
 						PickupMacro(index)
 					end,
@@ -139,16 +139,16 @@ function addon.GetOptions()
 					order = 11,
 				},
 				autoDismount = {
-					name = L['Dismount automatically'],
-					desc = L['Check this to have Squire2 automatically dismount you.'],
+					name = L['Dismount/exit vehicle/cancel shapeshift'],
+					desc = L['Check this to dismount, exit vehicle or cancel shapeshift resp. when on a mount, in a vehicle or shapeshifted.'],
 					type = 'toggle',
 					get = function() return addon.db.profile.autoDismount end,
 					set = function(_, value) addon.db.profile.autoDismount = value end,
 					order = 20,
 				},
 				safeDismount = {
-					name = L['Safe dismount'],
-					desc = L['Check this to prevent Squire2 from automatically dismounting you when you are flying.'],
+					name = L['... but not when flying'],
+					desc = L['Check this not to dismount/exit vehicle/cancel shapeshift when flying.'],
 					type = 'toggle',
 					get = function() return addon.db.profile.safeDismount end,
 					set = function(_, value) addon.db.profile.safeDismount = value end,
@@ -167,6 +167,7 @@ function addon.GetOptions()
 						control = CTRL_KEY,
 						alt = ALT_KEY,
 						shift = SHIFT_KEY,
+						rightbutton = L["Right mouse button"],
 					},
 					order = 40,
 				},

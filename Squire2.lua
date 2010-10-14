@@ -27,6 +27,9 @@ addon.Debug = Debug
 
 local _, playerClass = UnitClass('player')
 
+local LibMounts = LibStub("LibMounts-1.0")
+local AIR, GROUND, WATER = LibMounts.AIR, LibMounts.GROUND, LibMounts.WATER
+
 --------------------------------------------------------------------------------
 -- Initializing
 --------------------------------------------------------------------------------
@@ -51,14 +54,21 @@ function addon:ADDON_LOADED(_, name)
 	button:RegisterForClicks("AnyUp")
 	button:SetScript("PreClick", self.ButtonPreClick)
 	self.button = button
-	
+
 	eventHandler:RegisterEvent('PLAYER_REGEN_DISABLED')
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
 	eventHandler:RegisterEvent('COMPANION_LEARNED')
 	self.COMPANION_UNLEARNED = self.COMPANION_LEARNED
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
-	
+
 	self:COMPANION_LEARNED('OnEnable', 'MOUNT')
+
+	if playerClass == "DRUID" then
+		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
+		eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
+		self.PLAYER_ENTERING_WORLD = self.UPDATE_SHAPESHIFT_FORMS
+		self:UPDATE_SHAPESHIFT_FORMS("OnEnable")
+	end
 end
 eventHandler:RegisterEvent('ADDON_LOADED')
 
@@ -71,15 +81,14 @@ function addon:SpellBook_UpdateCompanionsFrame()
 	end
 end
 
-function addon.ButtonPreClick(...)
+function addon.ButtonPreClick(_, button)
 	if not InCombatLockdown() then
-		Debug("PreClick", ...)
-		addon:SetupButton(false)
+		addon:SetupButton(button)
 	end
 end
 
 function addon:PLAYER_REGEN_DISABLED()
-	addon:SetupButton(true)
+	addon:SetupButton("combat")
 end
 
 ----------------------------------------------
@@ -92,6 +101,8 @@ local spellNames = setmetatable({}, {__index = function(t, id)
 		Debug('Spell #', id, 'name:', name)
 		t[id] = name or false
 		return name
+	else
+		return id
 	end
 end})
 local knownSpells = setmetatable({}, {__index = function(t,id)
@@ -136,13 +147,7 @@ function addon:COMPANION_UPDATE(event, type)
 			local id, _, active = select(3, GetCompanionInfo("MOUNT", index))
 			if active then
 				Debug('Action mount:', id)
-				local min = 0
-				for id2, count in pairs(mountHistory) do
-					if id2 ~= id and (not min or count < min) then
-						min = count
-					end
-				end
-				mountHistory[id] = min + 1
+				mountHistory[id] = time()
 				return
 			end
 		end
@@ -153,134 +158,109 @@ end
 -- Core logic
 ----------------------------------------------
 
-local mountItems = {
-	38302, -- Ruby Beacon of the Dragon Queen (quest "On Ruby Wings" in Dragonblight)
-	37860, 37815, 37859, -- Drake essences in Occulus
-}
-
-local function UseSpell(id)
-	return id and (knownMounts[id] or knownSpells[id]) and IsUsableSpell(id) and id
-end
-
-local function GetMovingAction() end
-
-if playerClass == 'DRUID' then
-	local t = {}
-	function GetMovingAction(groundOnly, inCombat)
-		wipe(t)
-		-- Spell #1066: Aquatic form
-		if knownSpells[1066] then
-			t[#t+1] = "[swimming]"..spellNames[1066]
-		end
-		if not groundOnly then
-			-- Spell #33943: Flight form
-			-- Spell #40120: Swift Flight form
-			local flightForm = knownSpells[40120] or knownSpells[33943]
-			if flightForm then
-				t[#t+1] = "[nocombat,flyable]"..flightForm
+local mountsByType = {}
+function ChooseMount(mountType)
+	if not mountsByType[mountType] then
+		mountsByType[mountType] = LibMounts:GetMountList(mountType)
+	end
+	local mounts = mountsByType[mountType]
+	local oldestTime, oldestId
+	for id in pairs(knownMounts) do
+		if addon.db.char.mounts[id] and IsUsableSpell(id) and mounts[id] then
+			local lastTime = (mountHistory[id] or random(0, 1000))
+			if not oldestTime or lastTime < oldestTime then
+				oldestTime, oldestId = lastTime, id
 			end
 		end
-		-- Spell #783: Travel form
-		if knownSpells[783] then
-			t[#t+1] = "[outdoors]"..spellNames[783]
+	end
+	return oldestId
+end
+
+local dismountTest = "[mounted] dismount; [@vehicle,exists] exitvehicle"
+
+local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+	if not isMoving and not inCombat then
+		local id = ChooseMount(mountType)
+		Debug('GetActionForMount =>', id)
+		if id then
+			return 'spell', id
 		end
-		-- Spell #768: Cat form
-		if knownSpells[768] then
-			t[#t+1] = spellNames[768]
+	end
+end
+
+if playerClass == 'DRUID' then
+
+	local movingForms = {
+		783, -- Travel form
+		1066, -- Aquatic form
+		33943, -- Flight form
+		40120, -- Swift Flight form
+	}
+
+	local t = {}
+	function addon:UPDATE_SHAPESHIFT_FORMS()
+		wipe(t)
+		for index = 1, GetNumShapeshiftForms() do
+			Debug('GetShapeshiftFormInfo', index, '=>', GetShapeshiftFormInfo(index))
+			local _, name = GetShapeshiftFormInfo(index)
+			for i, id in pairs(movingForms) do
+				if name == spellNames[id] then
+					tinsert(t, index)
+				end
+			end
 		end
-		if t[1] then
-			return 'macrotext', "/cast "..table.concat(t, ';')
+		if #t > 0 then
+			dismountTest = format("[mounted] dismount; [@vehicle,exists] exitvehicle; [stance:%s] cancelform", table.concat(t, "/"))
+		else
+			dismountTest = "[mounted] dismount; [@vehicle,exists] exitvehicle"
+		end
+		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest)
+	end
+
+	local origGetActionForMount = GetActionForMount
+	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if actionType and actionData then
+			return actionType, actionData
+		elseif mountType == GROUND then
+			if isOutdoors then
+				return 'spell', knownSpells[783] -- Travel Form
+			elseif select(5, GetTalentInfo(2, 6)) == 2 then -- Feral Swiftness
+				return 'spell', knownSpells[768] -- Cat Form
+			end
+		elseif mountType == WATER then
+			return 'spell', knownSpells[1066] -- Aquatic Form
+		elseif mountType == AIR then
+			return 'spell', knownSpells[40120] or knownSpells[33943] -- Flight forms
 		end
 	end
 
 elseif playerClass == 'SHAMAN' then
-	function GetMovingAction()
-		-- Spell #2645: Ghost Wolf
-		-- Talent 2,6: Ancestral Swiftness
-		if knownSpells[2645] and select(5, GetTalentInfo(2, 6)) == 2 then
-			return 'spell', 2645
+
+	dismountTest = "[mounted] dismount; [@vehicle,exists] exitvehicle; [stance] cancelform"
+
+	local origGetActionForMount = GetActionForMount
+	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if actionType and actionData then
+			return actionType, actionData
+		elseif mountType == GROUND and select(5, GetTalentInfo(2, 6)) == 2 then -- Ancestral Swiftness
+			return 'spell', knownSpells[2645] -- Ghost Wolf
 		end
 	end
 
 elseif playerClass == 'HUNTER' then
-	function GetMovingAction()
-		-- Spell #5118: Aspect of the Cheetah
-		return 'spell', UseSpell(5118)
+
+	local origGetActionForMount = GetActionForMount
+	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if actionType and actionData then
+			return actionType, actionData
+		elseif mountType == GROUND then
+			return 'spell', knownSpells[5118] -- Aspect of the Cheetah
+		end
 	end
 
-end
-
-local function GetInCombatAction(button)
-	if addon.db.char.combatAction then
-		local actionType, actionData = strsplit(':', addon.db.char.combatAction)
-		actionData = tonumber(actionData) or actionData
-		Debug('Combat Action:', actionType, actionData)
-		return actionType, actionData
-	end
-	return GetMovingAction(button, true)
-end
-
-local flyingMounts = LibStub("LibMounts-1.0"):GetMountList("air")
-function ChooseMount(flying)
-	Debug('ChooseMount, flying=', flying, 'ignoreHistory=', ignoreHistory)
-	local leastUsed, winner
-	for id in pairs(knownMounts) do
-		if addon.db.char.mounts[id] and UseSpell(id) and (not flying or flyingMounts[id]) then
-			local count = (mountHistory[id] or 0)
-			if not leastUsed or count < leastUsed then
-				leastUsed, winner = count, id
-			end
-		end
-	end
-	return winner
-end
-
-local function GetOutOfCombatAction(groundOnly)
-	Debug('GetOutOfCombatAction', 'Mounted=', IsMounted(), 'Flying=', IsFlying(), 'FlyableArea=', IsFlyableArea(), 'Speed=', GetUnitSpeed("player"), 'Swimming=', IsSwimming(), 'groundOnly=', groundOnly)
-	-- Dismount
-	if IsMounted() or UnitInVehicle("player") then
-		if addon.db.profile.autoDismount and not (IsFlying() and addon.db.profile.safeDismount) then
-			return 'macrotext', IsMounted() and '/dismount' or '/exitvehicle'
-		else
-			return
-		end
-	end
-	-- Moving action if moving
-	if GetUnitSpeed("player") > 0 then
-		return GetMovingAction(groundOnly)
-	end
-	-- If swimming, Abyssal Seahorse in Vashj'ir, Sea Turtle or moving action
-	if IsSwimming() then
-		-- Spell #75207: Abyssal Seahorse
-		if knownMounts[75207] and GetMapInfo():match('^Vashjir') then
-			return 'spell', 75207
-		-- Spell #64731: Sea Turtle
-		elseif knownMounts[64731] then
-			return 'spell', 64731
-		else
-			return GetMovingAction(groundOnly)
-		end
-	end
-	if not groundOnly then
-		-- Flying mount in flyable area
-		if IsFlyableArea() then
-			local mount = ChooseMount(true)
-			if mount then
-				return 'spell', mount
-			end
-		end
-		-- Items that call flying mounts
-		for i, id in pairs(mountItems) do
-			if GetItemCount(id) > 0 and IsUsableItem(id) then
-				return 'item', id
-			end
-		end
-	end
-	-- Ground mount
-	local mount = ChooseMount()
-	if mount then
-		return 'spell', mount
-	end
 end
 
 local groundModifierCheck = {
@@ -289,29 +269,89 @@ local groundModifierCheck = {
 	control = IsControlKeyDown,
 	alt = IsAltKeyDown,
 	shift = IsShiftKeyDown,
+	rightbutton = function() return GetMouseButtonClicked() == "RightButton" end,
 }
 
-function addon:SetupButton(inCombat, button)
-	Debug('SetupButton', inCombat)
-	local actionType, actionData
-	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier](button)
-	if inCombat then
-		actionType, actionData = GetInCombatAction(groundOnly)
-	else
-		actionType, actionData = GetOutOfCombatAction(groundOnly)
+local GetCombatAction
+do
+	local t = {}
+	function GetCombatAction()
+		if addon.db.char.combatAction then
+			return strsplit(':', addon.db.char.combatAction)
+		end
+		wipe(t)
+		local _, waterSpell = GetActionForMount(WATER, true, true)
+		if waterSpell then
+			tinsert(t, "[swimming]!"..spellNames[waterSpell])
+		end
+		local _, outdoorsGroundSpell = GetActionForMount(GROUND, true, true, true)
+		local _, indoorsGroundSpell = GetActionForMount(GROUND, true, true, false)
+		if outdoorsGroundSpell and outdoorsGroundSpell ~= indoorsGroundSpell then
+			tinsert(t, "!"..spellNames[outdoorsGroundSpell])
+		end
+		if indoorsGroundSpell then
+			tinsert(t, "!"..spellNames[indoorsGroundSpell])
+		end
+		if #t > 0 then
+			return 'macrotext', format("/cast %s", table.concat(t, ";"))
+		end
 	end
+end
+
+local function GetActionForType(mountType, groundOnly, isMoving)
+	Debug('GetActionForType', mountType, groundOnly and "groundOnly" or "all", isMoving and "moving" or "stationary")
+	if mountType and (not groundOnly or mountType ~= AIR) then
+		return GetActionForMount(mountType, isMoving, false, IsOutdoors())
+	end
+end
+
+local function ResolveAction(button)
+	if button == "combat" then
+		return GetCombatAction()
+	end
+	-- Handle dismounting
+	local dismountAction = SecureCmdOptionParse(dismountTest)
+	Debug('dismountAction', dismountAction)
+	if button == "dismount" then
+		if dismountAction then
+			return "macrotext", "/"..dismountAction
+		else
+			return
+		end
+	elseif dismountAction then
+		if not addon.db.profile.autoDismount or (IsFlying() and addon.db.profile.safeDismount) then
+			return
+		else
+			return "macrotext", "/"..dismountAction
+		end
+	end
+	-- Handle all other actions
+	local primary, secondary = LibMounts:GetCurrentMountType()
+	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier]()
+	local isMoving = GetUnitSpeed("player") > 0
+	local actionType, actionData = GetActionForType(primary, groundOnly, isMoving)
+	if actionType and actionData then
+		return actionType, actionData
+	end
+	return GetActionForType(secondary, groundOnly, isMoving)
+end
+
+function addon:SetupButton(button)
+	Debug('SetupButton', button)
+	local actionType, actionData = ResolveAction(button)
 	if actionType and actionData then
 		local dataName = actionType
+		if actionType == 'spell' then
+			actionData = spellNames[actionData] or actionData
+		end
+		self.button:SetAttribute(actionType, actionData)
 		if actionType == 'macrotext' then
 			actionType = 'macro'
-		elseif actionType == 'spell' then
-			actionData = spellNames[actionData]
 		end
-		Debug('=>', actionType, actionData)
 		self.button:SetAttribute('type', actionType)
-		self.button:SetAttribute(dataName, actionData)
 	else
 		self.button:SetAttribute('type', nil)
 	end
+	Debug('=>', actionType, actionData)
 end
 
