@@ -136,7 +136,13 @@ function addon:COMPANION_UPDATE(event, type)
 			local id, _, active = select(3, GetCompanionInfo("MOUNT", index))
 			if active then
 				Debug('Action mount:', id)
-				mountHistory[id] = true
+				local min = 0
+				for id2, count in pairs(mountHistory) do
+					if id2 ~= id and (not min or count < min) then
+						min = count
+					end
+				end
+				mountHistory[id] = min + 1
 				return
 			end
 		end
@@ -215,24 +221,18 @@ local function GetInCombatAction(button)
 end
 
 local flyingMounts = LibStub("LibMounts-1.0"):GetMountList("air")
-function ChooseMount(flying, ignoreHistory)
+function ChooseMount(flying)
 	Debug('ChooseMount, flying=', flying, 'ignoreHistory=', ignoreHistory)
-	local foundSome = false
+	local leastUsed, winner
 	for id in pairs(knownMounts) do
 		if addon.db.char.mounts[id] and UseSpell(id) and (not flying or flyingMounts[id]) then
-			if not mountHistory[id] then
-				Debug('=> mount #', id, 'selected')
-				return id
-			else
-				Debug('Skipped mount #', id, ': in history')
-				foundSome = true
+			local count = (mountHistory[id] or 0)
+			if not leastUsed or count < leastUsed then
+				leastUsed, winner = count, id
 			end
 		end
 	end
-	if foundSome and not ignoreHistory then
-		wipe(mountHistory)
-		return ChooseMount(flying, true)
-	end
+	return winner
 end
 
 local function GetOutOfCombatAction(groundOnly)
