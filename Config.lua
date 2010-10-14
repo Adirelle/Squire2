@@ -112,6 +112,7 @@ function addon.GetOptions()
 		options = {
 			name = "Squire2",
 			type = "group",
+			disabled = function() return InCombatLockdown() end,
 			args = {
 				macro = {
 					name = L['Macro'],
