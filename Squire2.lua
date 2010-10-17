@@ -61,13 +61,23 @@ function addon:ADDON_LOADED(_, name)
 	self.COMPANION_UNLEARNED = self.COMPANION_LEARNED
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
 
-	self:COMPANION_LEARNED('OnEnable', 'MOUNT')
+	if IsLoggedIn() then
+		self:COMPANION_LEARNED('OnEnable', 'MOUNT')
+	else
+		eventHandler:RegisterEvent('PLAYER_LOGIN')
+		self.PLAYER_LOGIN = self.COMPANION_LEARNED
+	end
 
 	if playerClass == "DRUID" then
 		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
-		eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
-		self.PLAYER_ENTERING_WORLD = self.UPDATE_SHAPESHIFT_FORMS
-		self:UPDATE_SHAPESHIFT_FORMS("OnEnable")
+		if self.PLAYER_LOGIN then
+			self.PLAYER_LOGIN = function(self, ...)
+				self:COMPANION_LEARNED(...)
+				self:UPDATE_SHAPESHIFT_FORMS(...)
+			end
+		else
+			self:UPDATE_SHAPESHIFT_FORMS("OnEnable")
+		end
 	end
 end
 eventHandler:RegisterEvent('ADDON_LOADED')
@@ -124,7 +134,7 @@ end
 local knownMounts = {}
 
 function addon:COMPANION_LEARNED(event, type)
-	if type == 'MOUNT' then
+	if not type or type == 'MOUNT' then
 		Debug(event, type)
 		wipe(knownMounts)
 		for index = 1, GetNumCompanions("MOUNT") do
