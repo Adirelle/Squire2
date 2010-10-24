@@ -25,6 +25,8 @@ addon.Debug = Debug
 -- Want locals ?
 --------------------------------------------------------------------------------
 
+local L = addon.L
+
 local _, playerClass = UnitClass('player')
 
 local LibMounts = LibStub("LibMounts-1.0")
@@ -74,11 +76,22 @@ function addon:ADDON_LOADED(_, name)
 end
 eventHandler:RegisterEvent('ADDON_LOADED')
 
+function addon:LoadConfig()
+	local success, msg = LoadAddOn('Squire2_Config')
+	assert(success, "Could not load Squire2 configuration module: "..(msg and _G["ADDON_"..msg] or "unknown reason"))
+	return success
+end
+
+function addon:OpenConfig()
+	if self:LoadConfig() then
+		return self:OpenConfig()
+	end
+end
+
 function addon:SpellBook_UpdateCompanionsFrame()
 	if SpellBookCompanionsFrame.mode == 'MOUNT' then
-		LoadAddOn('Squire2_Config')
-		if self.InitializeConfig then
-			self:InitializeConfig()
+		if self:LoadConfig() then
+			return self:SpellBook_UpdateCompanionsFrame()
 		end
 	end
 end
@@ -103,6 +116,21 @@ function addon:SetupMacro(create)
 	else
 		return EditMacro(index, MACRO_NAME, MACRO_ICON, MACRO_BODY)
 	end
+end
+
+----------------------------------------------
+-- Chat commands and binding labels
+----------------------------------------------
+
+BINDING_HEADER_SQUIRE2 = "Squire2"
+_G["BINDING_NAME_CLICK Squire2Button:LeftButton"] = L["Use Squire2"]
+
+SLASH_SQUIRE1 = "/squire2"
+SLASH_SQUIRE2 = "/squire"
+SLASH_SQUIRE3 = "/sq"
+SLASH_SQUIRE4 = "/sq2"
+function SlashCmdList.SQUIRE()
+	addon:OpenConfig()
 end
 
 ----------------------------------------------
@@ -207,14 +235,16 @@ local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 	end
 end
 
+
 if playerClass == 'DRUID' then
 
+	local flyingForm = 33943 -- Flight form
 	local movingForms = {
 		783, -- Travel form
 		1066, -- Aquatic form
-		33943, -- Flight form
-		40120, -- Swift Flight form
+		flyingForm
 	}
+	addon.mountSpells = movingForms
 
 	local t = {}
 	function addon:UPDATE_SHAPESHIFT_FORMS()
@@ -233,6 +263,9 @@ if playerClass == 'DRUID' then
 		else
 			dismountTest = baseDismountTest
 		end
+		-- Select Swift Flight form or Flight form
+		flyingForm = knownSpells[40120] and 40120 or 33943
+		movingForms[3] = flyingForm
 		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest)
 	end
 
@@ -241,21 +274,24 @@ if playerClass == 'DRUID' then
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType == GROUND then
-			if isOutdoors then
-				return 'spell', knownSpells[783] -- Travel Form
-			elseif select(5, GetTalentInfo(2, 6)) == 2 then -- Feral Swiftness
-				return 'spell', knownSpells[768] -- Cat Form
-			end
-		elseif mountType == WATER then
+		end
+		local enabled = addon.db.char.mounts
+		if mountType == AIR and enabled[flyingForm] then
+			return 'spell', knownSpells[flyingForm] -- One of the flying form
+		end
+		if mountType == WATER and enabled[1066] then
 			return 'spell', knownSpells[1066] -- Aquatic Form
-		elseif mountType == AIR then
-			return 'spell', knownSpells[40120] or knownSpells[33943] -- Flight forms
+		end
+		if isOutdoors and enabled[783] then
+			return 'spell', knownSpells[783] -- Travel Form
+		elseif select(5, GetTalentInfo(2, 6)) == 2 and enabled[768] then -- Feral Swiftness
+			return 'spell', knownSpells[768] -- Cat Form
 		end
 	end
 
 elseif playerClass == 'SHAMAN' then
 
+	addon.mountSpells = { 2645 } -- Ghost Wolf
 	dismountTest = baseDismountTest.."; [stance] cancelform"
 
 	local origGetActionForMount = GetActionForMount
@@ -263,19 +299,21 @@ elseif playerClass == 'SHAMAN' then
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType == GROUND and select(5, GetTalentInfo(2, 6)) == 2 then -- Ancestral Swiftness
+		elseif mountType == GROUND and select(5, GetTalentInfo(2, 6)) == 2 and addon.db.char.mounts[2645] then -- Ancestral Swiftness
 			return 'spell', knownSpells[2645] -- Ghost Wolf
 		end
 	end
 
 elseif playerClass == 'HUNTER' then
 
+	addon.mountSpells = { 5118 } -- Aspect of the Cheetah
+
 	local origGetActionForMount = GetActionForMount
 	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType == GROUND then
+		elseif mountType == GROUND  and addon.db.char.mounts[5118] then
 			return 'spell', knownSpells[5118] -- Aspect of the Cheetah
 		end
 	end
