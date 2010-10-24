@@ -186,7 +186,8 @@ function ChooseMount(mountType)
 	return oldestId
 end
 
-local dismountTest = "[mounted] dismount; [@vehicle,exists] exitvehicle"
+local baseDismountTest = "[mounted] dismount; [@player,unithasvehicleui] exitvehicle"
+local dismountTest = baseDismountTest
 
 local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 	if not isMoving and not inCombat then
@@ -220,9 +221,9 @@ if playerClass == 'DRUID' then
 			end
 		end
 		if #t > 0 then
-			dismountTest = format("[mounted] dismount; [@vehicle,exists] exitvehicle; [stance:%s] cancelform", table.concat(t, "/"))
+			dismountTest = format("%s; [stance:%s] cancelform", baseDismountTest, table.concat(t, "/"))
 		else
-			dismountTest = "[mounted] dismount; [@vehicle,exists] exitvehicle"
+			dismountTest = baseDismountTest
 		end
 		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest)
 	end
@@ -247,7 +248,7 @@ if playerClass == 'DRUID' then
 
 elseif playerClass == 'SHAMAN' then
 
-	dismountTest = "[mounted] dismount; [@vehicle,exists] exitvehicle; [stance] cancelform"
+	dismountTest = baseDismountTest.."; [stance] cancelform"
 
 	local origGetActionForMount = GetActionForMount
 	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
