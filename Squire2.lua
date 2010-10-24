@@ -58,28 +58,18 @@ function addon:ADDON_LOADED(_, name)
 	eventHandler:RegisterEvent('PLAYER_REGEN_DISABLED')
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
 	eventHandler:RegisterEvent('COMPANION_LEARNED')
-	self.COMPANION_UNLEARNED = self.COMPANION_LEARNED
+	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
 
-	if IsLoggedIn() then
-		self:COMPANION_LEARNED('OnEnable', 'MOUNT')
-	else
-		eventHandler:RegisterEvent('PLAYER_LOGIN')
-		self.PLAYER_LOGIN = self.COMPANION_LEARNED
+	if playerClass == "DRUID" then
+		hooksecurefunc(self, "SPELLS_CHANGED", self.UPDATE_SHAPESHIFT_FORMS)
+		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
 	end
 
-	if playerClass == "DRUID" then
-		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
-		if self.PLAYER_LOGIN then
-			self.PLAYER_LOGIN = function(self, ...)
-				self:COMPANION_LEARNED(...)
-				self:UPDATE_SHAPESHIFT_FORMS(...)
-			end
-		else
-			self:UPDATE_SHAPESHIFT_FORMS("OnEnable")
-		end
+	if IsLoggedIn() then
+		self:SPELLS_CHANGED("OnEnable")
 	end
-	
+
 	self:SetupMacro()
 end
 eventHandler:RegisterEvent('ADDON_LOADED')
@@ -137,8 +127,9 @@ local knownSpells = setmetatable({}, {__index = function(t,id)
 	return isKnown
 end})
 
-function addon:SPELLS_CHANGED()
+function addon:SPELLS_CHANGED(event)
 	wipe(knownSpells)
+	self:COMPANION_LEARNED(event, "MOUNT")
 end
 
 ----------------------------------------------
@@ -157,6 +148,7 @@ function addon:COMPANION_LEARNED(event, type)
 		end
 	end
 end
+addon.COMPANION_UNLEARNED = addon.COMPANION_LEARNED
 
 ----------------------------------------------
 -- Track used mount history
@@ -296,7 +288,7 @@ local groundModifierCheck = {
 	control = IsControlKeyDown,
 	alt = IsAltKeyDown,
 	shift = IsShiftKeyDown,
-	rightbutton = function(button) return GetMouseButtonClicked() == "RightButton" or button == "RightButton" end,
+	rightbutton = function() return GetMouseButtonClicked() == "RightButton" end,
 }
 
 local GetCombatAction
@@ -354,7 +346,7 @@ local function ResolveAction(button)
 	end
 	-- Handle all other actions
 	local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
-	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier](button)
+	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier]()
 	local isMoving = GetUnitSpeed("player") > 0
 	local actionType, actionData = GetActionForType(primary, groundOnly, isMoving)
 	if (not actionType or not actionData) and secondary then
