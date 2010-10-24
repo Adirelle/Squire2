@@ -166,9 +166,6 @@ function SpellButton_Create(spellID)
 	self:SetScript('OnLeave', SpellButton_OnLeave)
 	self:SetScript('OnShow', SpellButton_OnShow)
 
-	local background = self:CreateTexture(nil, "BACKGROUND", "Spellbook-EmptySlot")
-	background:SetPoint("CENTER")
-
 	local icon = self:CreateTexture()
 	icon:SetAllPoints(self)
 	self.icon = icon
