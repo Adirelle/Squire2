@@ -14,10 +14,8 @@ local panelButton
 
 local CheckButton_OnClick, CheckButton_OnEnter, CheckButton_OnLeave
 
-local MACRO_NAME, MACRO_ICON = "Squire2", 251
-
 function addon:InitializeConfig()
-	
+
 	for i = 1, NUM_COMPANIONS_PER_PAGE do
 		local button = _G["SpellBookCompanionButton"..i];
 		local checkbutton = CreateFrame("CheckButton", nil, button, "UICheckButtonTemplate")
@@ -28,7 +26,7 @@ function addon:InitializeConfig()
 		checkbutton:SetScript('OnLeave', CheckButton_OnLeave)
 		checkbuttons[i] = checkbutton
 	end
-	
+
 	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", addon.GetOptions)
 
 	panelButton = CreateFrame("Button", nil, SpellBookCompanionsFrame, "UIPanelButtonTemplate")
@@ -37,7 +35,7 @@ function addon:InitializeConfig()
 	panelButton:SetSize(70, 22)
 	panelButton:Hide()
 	panelButton:SetScript('OnClick', function() AceConfigDialog:Open("Squire2") end)
-	
+
 	return self:SpellBook_UpdateCompanionsFrame()
 end
 
@@ -118,13 +116,7 @@ function addon.GetOptions()
 					name = L['Macro'],
 					desc = L['Create and pick up the Squire2 macro'],
 					type = 'execute',
-					func = function()
-						local index = GetMacroIndexByName(MACRO_NAME)
-						if index == 0 then
-							index = CreateMacro(MACRO_NAME, MACRO_ICON, "/click [button:2] Squire2Button RightButton; Squire2Button", 0)
-						end
-						PickupMacro(index)
-					end,
+					func = function() PickupMacro(addon:SetupMacro(true)) end,
 					order = 10,
 				},
 				keybinding = {
@@ -173,14 +165,28 @@ function addon.GetOptions()
 				},
 				combatAction = {
 					name = L['Combat action'],
-					desc = L['Drag an drop any action there to define the action to do it in combat instead of mounting. Right-click to clear.'],
+					desc = L['Define the action to use in combat instead of anything Squire2 might try.'],
+					usage = L['Drag and drop an action or right-click to clear.'],
 					type = 'input',
 					control = 'ActionSlot',
 					order = 50,
 					get = function() return addon.db.char.combatAction end,
 					set = function(_, value) addon.db.char.combatAction = value end,
 					validate = function(_, value)
-						return (value ~= "macro:Squire2") or L["Infinite recursion is bad"]
+						return (value ~= "macro:Squire2") or L["Infinite recursion is bad !"]
+					end
+				},
+				movingAction = {
+					name = L['Moving action'],
+					desc = L['Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available.'],
+					usage = L['Drag and drop an action or right-click to clear.'],
+					type = 'input',
+					control = 'ActionSlot',
+					order = 50,
+					get = function() return addon.db.char.movingAction end,
+					set = function(_, value) addon.db.char.movingAction = value end,
+					validate = function(_, value)
+						return (value ~= "macro:Squire2") or L["Infinite recursion is bad !"]
 					end
 				},
 			}

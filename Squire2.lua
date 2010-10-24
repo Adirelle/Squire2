@@ -79,6 +79,8 @@ function addon:ADDON_LOADED(_, name)
 			self:UPDATE_SHAPESHIFT_FORMS("OnEnable")
 		end
 	end
+	
+	self:SetupMacro()
 end
 eventHandler:RegisterEvent('ADDON_LOADED')
 
@@ -99,6 +101,18 @@ end
 
 function addon:PLAYER_REGEN_DISABLED()
 	addon:SetupButton("combat")
+end
+
+local MACRO_NAME, MACRO_ICON, MACRO_BODY = "Squire2", 251, "/click [button:2] Squire2Button RightButton; Squire2Button"
+function addon:SetupMacro(create)
+	local index = GetMacroIndexByName(MACRO_NAME)
+	if index == 0 then
+		if create then
+			return CreateMacro(MACRO_NAME, MACRO_ICON, MACRO_BODY, 0)
+		end
+	else
+		return EditMacro(index, MACRO_NAME, MACRO_ICON, MACRO_BODY)
+	end
 end
 
 ----------------------------------------------
@@ -190,7 +204,9 @@ local baseDismountTest = "[mounted] dismount; [@player,unithasvehicleui] exitveh
 local dismountTest = baseDismountTest
 
 local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-	if not isMoving and not inCombat then
+	if isMoving and addon.db.char.movingAction then
+		return strsplit(':', addon.db.char.movingAction)
+	elseif not isMoving and not inCombat then
 		local id = ChooseMount(mountType)
 		Debug('GetActionForMount =>', id)
 		if id then
@@ -280,7 +296,7 @@ local groundModifierCheck = {
 	control = IsControlKeyDown,
 	alt = IsAltKeyDown,
 	shift = IsShiftKeyDown,
-	rightbutton = function() return GetMouseButtonClicked() == "RightButton" end,
+	rightbutton = function(button) return GetMouseButtonClicked() == "RightButton" or button == "RightButton" end,
 }
 
 local GetCombatAction
@@ -295,12 +311,12 @@ do
 		if waterSpell then
 			tinsert(t, "[swimming]!"..spellNames[waterSpell])
 		end
-		local _, outdoorsGroundSpell = GetActionForMount(GROUND, true, true, true)
-		local _, indoorsGroundSpell = GetActionForMount(GROUND, true, true, false)
-		if outdoorsGroundSpell and outdoorsGroundSpell ~= indoorsGroundSpell then
-			tinsert(t, "!"..spellNames[outdoorsGroundSpell])
+		local outdoorsAction, outdoorsGroundSpell = GetActionForMount(GROUND, true, true, true)
+		local indoorsAction, indoorsGroundSpell = GetActionForMount(GROUND, true, true, false)
+		if outdoorsAction == "spell" and outdoorsGroundSpell and outdoorsGroundSpell ~= indoorsGroundSpell then
+			tinsert(t, "[outdoors]!"..spellNames[outdoorsGroundSpell])
 		end
-		if indoorsGroundSpell then
+		if indoorsAction == "spell" and indoorsGroundSpell then
 			tinsert(t, "!"..spellNames[indoorsGroundSpell])
 		end
 		if #t > 0 then
@@ -337,14 +353,17 @@ local function ResolveAction(button)
 		end
 	end
 	-- Handle all other actions
-	local primary, secondary = LibMounts:GetCurrentMountType()
-	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier]()
+	local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
+	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier](button)
 	local isMoving = GetUnitSpeed("player") > 0
 	local actionType, actionData = GetActionForType(primary, groundOnly, isMoving)
-	if actionType and actionData then
-		return actionType, actionData
+	if (not actionType or not actionData) and secondary then
+		actionType, actionData = GetActionForType(secondary, groundOnly, isMoving)
+		if (not actionType or not actionData) and tertiary then
+			actionType, actionData = GetActionForType(tertiary, groundOnly, isMoving)
+		end
 	end
-	return GetActionForType(secondary, groundOnly, isMoving)
+	return actionType, actionData
 end
 
 function addon:SetupButton(button)
