@@ -29,7 +29,7 @@ local L = addon.L
 
 local _, playerClass = UnitClass('player')
 
-local LibMounts = LibStub("LibMounts-1.0")
+local LibMounts, LMversion = LibStub("LibMounts-1.0")
 local AIR, GROUND, WATER = LibMounts.AIR, LibMounts.GROUND, LibMounts.WATER
 
 --------------------------------------------------------------------------------
@@ -204,10 +204,11 @@ end
 
 local mountsByType = {}
 function ChooseMount(mountType)
-	if not mountsByType[mountType] then
-		mountsByType[mountType] = LibMounts:GetMountList(mountType)
+local mounts = mountsByType[mountType]
+	if not mounts then
+		mounts = LibMounts:GetMountList(mountType)
+		mountsByType[mountType] = mounts
 	end
-	local mounts = mountsByType[mountType]
 	local oldestTime, oldestId
 	for id in pairs(knownMounts) do
 		if addon.db.char.mounts[id] and IsUsableSpell(id) and mounts[id] then
@@ -234,7 +235,6 @@ local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		end
 	end
 end
-
 
 if playerClass == 'DRUID' then
 
@@ -415,3 +415,72 @@ function addon:SetupButton(button)
 	Debug('=>', actionType, actionData)
 end
 
+-- Debug code
+SLASH_TESTSQUIRE1 = "/sq2test"
+
+do
+	local function tocoloredstring(value)
+		if type(value) == "string" then
+			return value
+		elseif value == nil then
+			return "|cff777777nil|r"
+		elseif type(value) == "bool" then
+			return format("|cff0077ff%s|r", tostring(value))
+		elseif type(value) == "number" then
+			return format("|cff7777ff%s|r", tostring(value))
+		elseif type(value) == "table" and type(value.GetName) == "function" then
+			return format("|cffff7700[%s]|r", tostring(value:GetName()))
+		else
+			return format("|cff00ff77%s|r", tostring(value))
+		end
+	end
+
+	local function tocoloredstringall(...)
+		if select('#', ...) > 0 then
+			return tocoloredstring(...), tocoloredstringall(select(2, ...))
+		end
+	end
+
+	local function cprint(...)
+		local str = strjoin(" ", tocoloredstringall(...)):gsub("= ", "=")
+		return print(str)
+	end
+
+	function SlashCmdList.TESTSQUIRE()
+		cprint('|cffff7700=== Squire2 test ===|r')
+		cprint('Version:', GetAddOnMetadata("SQUIRE2", "Version"))
+		cprint("Class=", select(2, UnitClass("player")), "Level=", UnitLevel("player"))
+		cprint('LibMounts-1.0 version:', LMversion)
+		cprint('LibMounts-1.0 data version:', select(2, LibStub('LibMounts-1.0_Data')))
+		cprint('LibMounts GetCurrentMountType:', LibMounts:GetCurrentMountType())
+		cprint('GetMapInfo=', GetMapInfo(), 'IsFlyableArea=', not not IsFlyableArea())
+		cprint('IsFlying=', not not IsFlying(), 'IsSwimming=', not not IsSwimming(), 'IsMoving=', GetUnitSpeed("player") > 0)
+		cprint('IsMounted=', not not IsMounted(), 'InVehicle=', not not UnitHasVehicleUI("player"))
+		cprint('dismountTest=', dismountTest, 'result=', SecureCmdOptionParse(dismountTest))
+		cprint('|cffff7700Mounts:|r')
+		for index = 1, GetNumCompanions("MOUNT") do
+			local _, name, id, _, active = GetCompanionInfo("MOUNT", index)
+			local ground, air, water = LibMounts:GetMountInfo(id)
+			cprint('  ', GetSpellLink(id), 'active=', not not active, 'known=', not not knownMounts[id], 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id), "type=", water and "WATER" or air and "AIR" or ground and "GROUND" or "")
+		end
+		if addon.mountSpells then
+			cprint('|cffff7700Spells:|r')
+			for i, id in ipairs(addon.mountSpells) do
+				cprint('  ', GetSpellLink(id), 'known=', not not knownSpells[id], 'enabled=', not not addon.db.char.mounts[id])
+			end
+		end
+		cprint('|cffff7700Tests:|r')
+		cprint('- GROUND, stationary =>', GetActionForType(GROUND, false, false))
+		cprint('- GROUND, moving =>', GetActionForType(GROUND, false, true))
+		cprint('- AIR, stationary =>', GetActionForType(AIR, false, false))
+		cprint('- AIR, moving =>', GetActionForType(AIR, false, true))
+		cprint('- AIR, stationary, ground modifier =>', GetActionForType(AIR, true, false))
+		cprint('- AIR, moving, ground modifier =>', GetActionForType(AIR, true, true))
+		cprint('- WATER, stationary =>', GetActionForType(WATER, false, false))
+		cprint('- WATER, moving =>', GetActionForType(WATER, false, true))
+		cprint('- WATER, stationary, ground modifier =>', GetActionForType(WATER, true, false))
+		cprint('- WATER, moving, ground modifier =>', GetActionForType(WATER, true, true))
+		cprint('- combat action:', GetCombatAction())
+		cprint('- actual action:', ResolveAction())
+	end
+end
