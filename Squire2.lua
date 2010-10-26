@@ -221,7 +221,7 @@ local mounts = mountsByType[mountType]
 	return oldestId
 end
 
-local baseDismountTest = "[mounted] dismount; [@player,unithasvehicleui] exitvehicle"
+local baseDismountTest = "[mounted] dismount; [@vehicle,exists] leavevehicle"
 local dismountTest = baseDismountTest
 
 local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
