@@ -59,8 +59,8 @@ function addon:ADDON_LOADED(_, name)
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_DISABLED')
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
-	eventHandler:RegisterEvent('COMPANION_LEARNED')
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
+	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
 
 	if playerClass == "DRUID" then
@@ -157,26 +157,10 @@ end})
 
 function addon:SPELLS_CHANGED(event)
 	wipe(knownSpells)
-	self:COMPANION_LEARNED(event, "MOUNT")
 end
-
-----------------------------------------------
--- Known mount cache
-----------------------------------------------
-
-local knownMounts = {}
-
-function addon:COMPANION_LEARNED(event, type)
-	if not type or type == 'MOUNT' then
-		Debug(event, type)
-		wipe(knownMounts)
-		for index = 1, GetNumCompanions("MOUNT") do
-			local id = select(3, GetCompanionInfo("MOUNT", index))
-			knownMounts[id] = true
-		end
-	end
+function addon:PLAYER_ENTERING_WORLD(event)
+	return self:SPELLS_CHANGED(event)
 end
-addon.COMPANION_UNLEARNED = addon.COMPANION_LEARNED
 
 ----------------------------------------------
 -- Track used mount history
@@ -210,7 +194,11 @@ local mounts = mountsByType[mountType]
 		mountsByType[mountType] = mounts
 	end
 	local oldestTime, oldestId
-	for id in pairs(knownMounts) do
+	for index = 1, GetNumCompanions("MOUNT") do
+		local id, _, active = select(3, GetCompanionInfo("MOUNT", index))
+		if active then
+			mountHistory[id] = time()
+		end
 		if addon.db.char.mounts[id] and IsUsableSpell(id) and mounts[id] then
 			local lastTime = (mountHistory[id] or random(0, 1000))
 			if not oldestTime or lastTime < oldestTime then
@@ -461,7 +449,7 @@ do
 		for index = 1, GetNumCompanions("MOUNT") do
 			local _, name, id, _, active = GetCompanionInfo("MOUNT", index)
 			local ground, air, water = LibMounts:GetMountInfo(id)
-			cprint('  ', GetSpellLink(id), 'active=', not not active, 'known=', not not knownMounts[id], 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id), "type=", water and "WATER" or air and "AIR" or ground and "GROUND" or "")
+			cprint('  ', GetSpellLink(id), 'active=', not not active, 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id), "type=", water and "WATER" or air and "AIR" or ground and "GROUND" or "")
 		end
 		if addon.mountSpells then
 			cprint('|cffff7700Spells:|r')
