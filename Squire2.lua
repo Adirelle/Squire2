@@ -212,6 +212,24 @@ end
 local baseDismountTest = "[mounted] dismount; [@vehicle,exists] leavevehicle"
 local dismountTest = baseDismountTest
 
+local function SetButtonAction(actionType, actionData, prefix, suffix)
+	if not prefix then prefix = "" end
+	if not suffix then suffix = "" end
+	if actionType and actionData then
+		if actionType == 'spell' then
+			actionData = spellNames[actionData] or actionData
+		end
+		addon.button:SetAttribute(prefix..actionType..suffix, actionData)
+		if actionType == 'macrotext' then
+			actionType = 'macro'
+		end
+		addon.button:SetAttribute(prefix..'type'..suffix, actionType)
+	else
+		addon.button:SetAttribute(prefix..'type'..suffix, nil)
+	end
+	Debug('SetButtonAction', actionType, actionData, prefix, suffix)
+end
+
 local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 	if isMoving and addon.db.char.movingAction then
 		return strsplit(':', addon.db.char.movingAction)
@@ -320,9 +338,17 @@ local groundModifierCheck = {
 local GetCombatAction
 do
 	local t = {}
+	local commands = {}
 	function GetCombatAction()
 		if addon.db.char.combatAction then
 			return strsplit(':', addon.db.char.combatAction)
+		end
+		wipe(commands)
+		if not GetCVarBool('autoUnshift') then
+			tinsert(commands, "/cancelform [form]")
+		end
+		if not GetCVarBool('autoDismount') then
+			tinsert(commands, "/dismount [noflying,mounted]")
 		end
 		wipe(t)
 		local _, waterSpell = GetActionForMount(WATER, true, true)
@@ -338,7 +364,10 @@ do
 			tinsert(t, "!"..spellNames[indoorsGroundSpell])
 		end
 		if #t > 0 then
-			return 'macrotext', format("/cast %s", table.concat(t, ";"))
+			tinsert(commands, strjoin(" ", "/cast", table.concat(t, ";")))
+		end
+		if #commands > 0 then
+			return 'macrotext', table.concat(commands, "\n")
 		end
 	end
 end
@@ -381,26 +410,28 @@ local function ResolveAction(button)
 			actionType, actionData = GetActionForType(tertiary, groundOnly, isMoving)
 		end
 	end
+	-- Handle when autoUnshift or autoDismount are disabled
+	if actionType and actionData then
+		local prefix
+		if not GetCVarBool('autoUnshift') and SecureCmdOptionParse("[form]1") then
+			prefix = "/cancelform\n"
+		elseif not GetCVarBool('autoDismount') and SecureCmdOptionParse("[noflying,mounted]1") then
+			prefix = "/dismount\n"
+		end
+		if prefix then
+			if actionType == "spell" then
+				actionType, actionData = "macrotext", prefix.."/cast "..spellNames[actionData]
+			elseif actionType == "macrotext" then
+				actionData = strjoin("", prefix, actionData)
+			end
+		end
+	end
 	return actionType, actionData
 end
 
 function addon:SetupButton(button)
 	Debug('SetupButton', button)
-	local actionType, actionData = ResolveAction(button)
-	if actionType and actionData then
-		local dataName = actionType
-		if actionType == 'spell' then
-			actionData = spellNames[actionData] or actionData
-		end
-		self.button:SetAttribute(actionType, actionData)
-		if actionType == 'macrotext' then
-			actionType = 'macro'
-		end
-		self.button:SetAttribute('type', actionType)
-	else
-		self.button:SetAttribute('type', nil)
-	end
-	Debug('=>', actionType, actionData)
+	SetButtonAction(ResolveAction(button))
 end
 
 -- Debug code
