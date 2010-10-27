@@ -157,14 +157,21 @@ local function SpellButton_OnShow(self)
 	end
 end
 
+local function SpellButton_OnDragStart(self)
+	PickupSpell(self.spellID)
+end
+
 function SpellButton_Create(spellID)
-	local self = CreateFrame("Frame", nil, SpellBookCompanionsFrame)
+	local self = CreateFrame("Button", nil, SpellBookCompanionsFrame)
 	self:Hide()
 	self.spellID = spellID
 	self:SetSize(37,37)
 	self:SetScript('OnEnter', SpellButton_OnEnter)
 	self:SetScript('OnLeave', SpellButton_OnLeave)
 	self:SetScript('OnShow', SpellButton_OnShow)
+
+	self:RegisterForDrag("LeftButton", "RightButton")
+	self:SetScript('OnDragStart', SpellButton_OnDragStart)
 
 	local icon = self:CreateTexture()
 	icon:SetAllPoints(self)
