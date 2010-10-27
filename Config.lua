@@ -183,6 +183,43 @@ function SpellButton_Create(spellID)
 end
 
 --------------------------------------------------------------------------------
+-- Key binding handling
+--------------------------------------------------------------------------------
+
+local SQUIRE2_BINDING = "CLICK Squire2Button:LeftButton"
+
+local function UpdateBindingKey(key)
+	-- Based on code provided by Phanx
+	if key == "" then key = nil end
+	local first, second = GetBindingKey(SQUIRE2_BINDING)
+	Debug("UpdateBindingKey", "key=",key, "first=", first, "second=", second)
+	if first == key then return end
+	if first then
+		SetBinding(first)
+	end
+	if second then
+		SetBinding(second)
+		if key == second then
+			second = first
+		end
+	end
+	if key then
+		local action = GetBindingAction(key)
+		if action and action ~= "" then
+			print(KEY_UNBOUND_ERROR:format(action))
+		end
+		Debug("  SetBinding", key)
+		SetBinding(key, SQUIRE2_BINDING)
+	end
+	if second then
+		Debug("  SetBinding", second)
+		SetBinding(second, SQUIRE2_BINDING)
+	end
+	Debug("  =>", GetBindingKey(SQUIRE2_BINDING))
+	SaveBindings(GetCurrentBindingSet())
+end
+
+--------------------------------------------------------------------------------
 -- Handlers of the panel button
 --------------------------------------------------------------------------------
 
@@ -198,7 +235,6 @@ end
 -- Options
 --------------------------------------------------------------------------------
 
-local SQUIRE2_BINDING = "CLICK Squire2Button:LeftButton"
 
 local options
 function addon.GetOptions()
@@ -226,10 +262,7 @@ function addon.GetOptions()
 					desc = L["Select a binding to use Squire2 without a macro."],
 					type = 'keybinding',
 					get = function() return GetBindingKey(SQUIRE2_BINDING) end,
-					set = function(_, value)
-						SetBinding(value, SQUIRE2_BINDING)
-						SaveBindings(GetCurrentBindingSet())
-					end,
+					set = function(_, value) UpdateBindingKey(value) end,
 					order = 15,
 				},
 				autoDismount = {
