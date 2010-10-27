@@ -76,23 +76,23 @@ function addon:ADDON_LOADED(_, name)
 end
 eventHandler:RegisterEvent('ADDON_LOADED')
 
+local function NOOP() end
+
 function addon:LoadConfig()
+	self.LoadConfig, self.OpenConfig, self.SpellBook_UpdateCompanionsFrame = NOOP, NOOP, NOOP
 	local success, msg = LoadAddOn('Squire2_Config')
 	assert(success, "Could not load Squire2 configuration module: "..(msg and _G["ADDON_"..msg] or "unknown reason"))
-	return success
 end
 
 function addon:OpenConfig()
-	if self:LoadConfig() then
-		return self:OpenConfig()
-	end
+	self:LoadConfig()
+	return self:OpenConfig()
 end
 
 function addon:SpellBook_UpdateCompanionsFrame()
 	if SpellBookCompanionsFrame.mode == 'MOUNT' then
-		if self:LoadConfig() then
-			return self:SpellBook_UpdateCompanionsFrame()
-		end
+		self:LoadConfig()
+		return self:SpellBook_UpdateCompanionsFrame()
 	end
 end
 
