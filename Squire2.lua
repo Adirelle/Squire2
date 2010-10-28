@@ -209,7 +209,7 @@ local mounts = mountsByType[mountType]
 	return oldestId
 end
 
-local baseDismountTest = "[mounted] dismount; [@vehicle,exists] leavevehicle"
+local baseDismountTest = "[mounted] /dismount; [@vehicle,exists] /leavevehicle"
 local dismountTest = baseDismountTest
 
 local function SetButtonAction(actionType, actionData, prefix, suffix)
@@ -265,7 +265,7 @@ if playerClass == 'DRUID' then
 			end
 		end
 		if #t > 0 then
-			dismountTest = format("%s; [stance:%s] cancelform", baseDismountTest, table.concat(t, "/"))
+			dismountTest = format("%s; [form:%s] /cancelform", baseDismountTest, table.concat(t, "/"))
 		else
 			dismountTest = baseDismountTest
 		end
@@ -298,7 +298,7 @@ if playerClass == 'DRUID' then
 elseif playerClass == 'SHAMAN' then
 
 	addon.mountSpells = { 2645 } -- Ghost Wolf
-	dismountTest = baseDismountTest.."; [stance] cancelform"
+	dismountTest = baseDismountTest.."; [form] /cancelform"
 
 	local origGetActionForMount = GetActionForMount
 	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
@@ -345,7 +345,7 @@ do
 		end
 		wipe(commands)
 		if not GetCVarBool('autoUnshift') then
-			tinsert(commands, "/cancelform [form]")
+			tinsert(commands, "/cancelform [noflying,form]")
 		end
 		if not GetCVarBool('autoDismount') then
 			tinsert(commands, "/dismount [noflying,mounted]")
@@ -388,7 +388,7 @@ local function ResolveAction(button)
 	Debug('dismountAction', dismountAction)
 	if button == "dismount" then
 		if dismountAction then
-			return "macrotext", "/"..dismountAction
+			return "macrotext", dismountAction
 		else
 			return
 		end
@@ -396,7 +396,7 @@ local function ResolveAction(button)
 		if not addon.db.profile.autoDismount or (IsFlying() and addon.db.profile.safeDismount) then
 			return
 		else
-			return "macrotext", "/"..dismountAction
+			return "macrotext", dismountAction
 		end
 	end
 	-- Handle all other actions
@@ -413,7 +413,7 @@ local function ResolveAction(button)
 	-- Handle when autoUnshift or autoDismount are disabled
 	if actionType and actionData then
 		local prefix
-		if not GetCVarBool('autoUnshift') and SecureCmdOptionParse("[form]1") then
+		if not GetCVarBool('autoUnshift') and SecureCmdOptionParse("[noflying,form]1") then
 			prefix = "/cancelform\n"
 		elseif not GetCVarBool('autoDismount') and SecureCmdOptionParse("[noflying,mounted]1") then
 			prefix = "/dismount\n"
