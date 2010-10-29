@@ -305,7 +305,7 @@ elseif playerClass == 'SHAMAN' then
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType == GROUND and select(5, GetTalentInfo(2, 6)) == 2 and addon.db.char.mounts[2645] then -- Ancestral Swiftness
+		elseif mountType == GROUND and addon.db.char.mounts[2645] and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
 			return 'spell', knownSpells[2645] -- Ghost Wolf
 		end
 	end
