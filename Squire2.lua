@@ -138,10 +138,14 @@ end
 ----------------------------------------------
 
 local spellNames = setmetatable({}, {__index = function(t, id)
-	if type(id) == "number" then
-		local name = GetSpellInfo(id)
-		Debug('Spell #', id, 'name:', name)
+	local numId = tonumber(id)
+	if numId then
+		local name = GetSpellInfo(numId)
+		Debug('Spell #', numId, 'name:', name)
 		t[id] = name or false
+		if numId ~= id then
+			t[numId] = name
+		end
 		return name
 	else
 		return id
@@ -209,8 +213,9 @@ local mounts = mountsByType[mountType]
 	return oldestId
 end
 
-local baseDismountTest = "[mounted] /dismount; [@vehicle,exists] /leavevehicle"
-local dismountTest = baseDismountTest
+local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]"
+local dismountTest = "[mounted][@vehicle,exists]"
+local canShapeshift = (playerClass == "DRUID" or playerClass == "SHAMAN")
 
 local function SetButtonAction(actionType, actionData, prefix, suffix)
 	if not prefix then prefix = "" end
@@ -232,11 +237,16 @@ end
 
 local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 	if isMoving and addon.db.char.movingAction then
-		return strsplit(':', addon.db.char.movingAction)
-	elseif not isMoving and not inCombat then
+		local actionType, actionData = strsplit(':', addon.db.char.movingAction)
+		if actionType and actionData then
+			Debug('GetActionForMount (moving) =>', actionType, actionData)
+			return actionType, actionData
+		end
+	end
+	if not isMoving and not inCombat then
 		local id = ChooseMount(mountType)
-		Debug('GetActionForMount =>', id)
 		if id then
+			Debug('GetActionForMount => spell', spellNames[id] or id)
 			return 'spell', id
 		end
 	end
@@ -252,6 +262,7 @@ if playerClass == 'DRUID' then
 	}
 	addon.mountSpells = movingForms
 
+	local baseDismountTest, baseDismountMacro = dismountTest, dismountMacro
 	local t = {}
 	function addon:UPDATE_SHAPESHIFT_FORMS()
 		wipe(t)
@@ -265,14 +276,16 @@ if playerClass == 'DRUID' then
 			end
 		end
 		if #t > 0 then
-			dismountTest = format("%s; [form:%s] /cancelform", baseDismountTest, table.concat(t, "/"))
+			local test = format("[form:%s]", table.concat(t, "/"))
+			dismountTest = baseDismountTest..test
+			dismountMacro =  baseDismountMacro.."\n/cancelform "..test
 		else
-			dismountTest = baseDismountTest
+			dismountTest, dismountMacro = baseDismountTest, baseDismountMacro
 		end
 		-- Select Swift Flight form or Flight form
 		flyingForm = knownSpells[40120] and 40120 or 33943
 		movingForms[3] = flyingForm
-		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest)
+		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest, dismountMacro, cancelFormTest, cancelFormMacro)
 	end
 
 	local origGetActionForMount = GetActionForMount
@@ -298,7 +311,9 @@ if playerClass == 'DRUID' then
 elseif playerClass == 'SHAMAN' then
 
 	addon.mountSpells = { 2645 } -- Ghost Wolf
-	dismountTest = baseDismountTest.."; [form] /cancelform"
+
+	dismountTest = dismountTest .. "[form]"
+	dismountMacro = dismountMacro .. "\n/cancelform [form]"
 
 	local origGetActionForMount = GetActionForMount
 	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
@@ -319,7 +334,7 @@ elseif playerClass == 'HUNTER' then
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType == GROUND  and addon.db.char.mounts[5118] then
+		elseif mountType == GROUND and addon.db.char.mounts[5118] then
 			return 'spell', knownSpells[5118] -- Aspect of the Cheetah
 		end
 	end
@@ -335,39 +350,81 @@ local groundModifierCheck = {
 	rightbutton = function() return GetMouseButtonClicked() == "RightButton" end,
 }
 
+local function GetMacroCast(actionType, actionData)
+	if not actionData then return end
+	if actionType == 'spell' then
+		return spellNames[actionData] or actionData
+	elseif actionType == 'item' then
+		return GetItemInfo(actionData) or actionData
+	end
+end
+
+local function GetMacroForAction(actionType, actionData)
+	local cast = GetMacroCast(actionType, actionData)
+	if cast then
+		return "/cast "..cast
+	elseif actionType == 'macrotext' then
+		return actionData
+	end
+end
+
+local PrependUnshiftMacro
+do
+	local commands = {}
+	function PrependUnshiftMacro(actionType, actionData)
+		wipe(commands)
+		local noflying = GetCVarBool('autoDismountFyling') and '' or ',noflying'
+		if canShapeshift and not GetCVarBool('autoUnshift') then
+			tinsert(commands, '/cancelform [form'..noflying..']')
+		end
+		if not GetCVarBool('autoDismount') then
+			tinsert(commands, '/dismount [mounted'..noflying..']')
+		end
+		Debug("PrependUnshiftMacro", actionType, actionData, '|', unpack(commands))
+		if #commands == 0 then
+			return actionType, actionData
+		end
+		if actionType and actionData then
+			local macroForAction = GetMacroForAction(actionType, actionData)
+			if macroForAction then
+				tinsert(commands, macroForAction)
+			else
+				-- Sometimes, you can't...
+				return actionType, actionData
+			end
+		end
+		Debug("PrependUnshiftMacro =>", unpack(commands))
+		return 'macrotext', table.concat(commands, "\n")
+	end
+end
+
 local GetCombatAction
 do
 	local t = {}
-	local commands = {}
 	function GetCombatAction()
 		if addon.db.char.combatAction then
-			return strsplit(':', addon.db.char.combatAction)
-		end
-		wipe(commands)
-		if not GetCVarBool('autoUnshift') then
-			tinsert(commands, "/cancelform [noflying,form]")
-		end
-		if not GetCVarBool('autoDismount') then
-			tinsert(commands, "/dismount [noflying,mounted]")
+			local actionType, actionData = strsplit(':', addon.db.char.combatAction)
+			if actionType and actionData then
+				Debug('GetCombatAction (custom)', actionType, actionData)
+				return actionType, actionData
+			end
 		end
 		wipe(t)
-		local _, waterSpell = GetActionForMount(WATER, true, true)
-		if waterSpell then
-			tinsert(t, "[swimming]!"..spellNames[waterSpell])
+		local waterCast = GetMacroCast(GetActionForMount(WATER, true, true))
+		local outdoorsCast = GetMacroCast(GetActionForMount(GROUND, true, true, true))
+		local indoorsCast = GetMacroCast(GetActionForMount(GROUND, true, true, false))
+		if waterCast and waterCast ~= indoorsCast then
+			tinsert(t, "[swimming]!"..waterCast)
 		end
-		local outdoorsAction, outdoorsGroundSpell = GetActionForMount(GROUND, true, true, true)
-		local indoorsAction, indoorsGroundSpell = GetActionForMount(GROUND, true, true, false)
-		if outdoorsAction == "spell" and outdoorsGroundSpell and outdoorsGroundSpell ~= indoorsGroundSpell then
-			tinsert(t, "[outdoors]!"..spellNames[outdoorsGroundSpell])
+		if outdoorsCast and outdoorsCast ~= indoorsCast then
+			tinsert(t, "[outdoors]!"..outdoorsCast)
 		end
-		if indoorsAction == "spell" and indoorsGroundSpell then
-			tinsert(t, "!"..spellNames[indoorsGroundSpell])
+		if indoorsCast then
+			tinsert(t, "!"..indoorsCast)
 		end
+		Debug('GetCombatAction', unpack(t))
 		if #t > 0 then
-			tinsert(commands, strjoin(" ", "/cast", table.concat(t, ";")))
-		end
-		if #commands > 0 then
-			return 'macrotext', table.concat(commands, "\n")
+			return 'macrotext', "/cast "..table.concat(t, ";")
 		end
 	end
 end
@@ -381,22 +438,22 @@ end
 
 local function ResolveAction(button)
 	if button == "combat" then
-		return GetCombatAction()
+		return PrependUnshiftMacro(GetCombatAction())
 	end
 	-- Handle dismounting
-	local dismountAction = SecureCmdOptionParse(dismountTest)
-	Debug('dismountAction', dismountAction)
+	local canDismount = SecureCmdOptionParse(dismountTest)
+	Debug('canDismount', canDismount)
 	if button == "dismount" then
-		if dismountAction then
-			return "macrotext", dismountAction
+		if canDismount then
+			return "macrotext", dismountMacro
 		else
 			return
 		end
-	elseif dismountAction then
+	elseif canDismount then
 		if not addon.db.profile.autoDismount or (IsFlying() and addon.db.profile.safeDismount) then
 			return
 		else
-			return "macrotext", dismountAction
+			return "macrotext", dismountMacro
 		end
 	end
 	-- Handle all other actions
@@ -410,23 +467,7 @@ local function ResolveAction(button)
 			actionType, actionData = GetActionForType(tertiary, groundOnly, isMoving)
 		end
 	end
-	-- Handle when autoUnshift or autoDismount are disabled
-	if actionType and actionData then
-		local prefix
-		if not GetCVarBool('autoUnshift') and SecureCmdOptionParse("[noflying,form]1") then
-			prefix = "/cancelform\n"
-		elseif not GetCVarBool('autoDismount') and SecureCmdOptionParse("[noflying,mounted]1") then
-			prefix = "/dismount\n"
-		end
-		if prefix then
-			if actionType == "spell" then
-				actionType, actionData = "macrotext", prefix.."/cast "..spellNames[actionData]
-			elseif actionType == "macrotext" then
-				actionData = strjoin("", prefix, actionData)
-			end
-		end
-	end
-	return actionType, actionData
+	return PrependUnshiftMacro(actionType, actionData)
 end
 
 function addon:SetupButton(button)
