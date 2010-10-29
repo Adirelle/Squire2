@@ -499,7 +499,8 @@ do
 		cprint('- WATER, moving =>', GetActionForType(WATER, false, true))
 		cprint('- WATER, stationary, ground modifier =>', GetActionForType(WATER, true, false))
 		cprint('- WATER, moving, ground modifier =>', GetActionForType(WATER, true, true))
-		cprint('- combat action:', GetCombatAction())
-		cprint('- actual action:', ResolveAction())
+		cprint('- in-combat action:', ResolveAction("combat"))
+		cprint('- out-of-combat action:', ResolveAction("LeftButton"))
+		cprint('- actual action:', ResolveAction(InCombatLockdown() and "combat" or "LeftButton"))
 	end
 end
