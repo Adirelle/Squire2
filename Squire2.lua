@@ -243,7 +243,7 @@ local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 			return actionType, actionData
 		end
 	end
-	if not isMoving and not inCombat then
+	if mountType and not isMoving and not inCombat then
 		local id = ChooseMount(mountType)
 		if id then
 			Debug('GetActionForMount => spell', spellNames[id] or id)
@@ -295,14 +295,14 @@ if playerClass == 'DRUID' then
 			return actionType, actionData
 		end
 		local enabled = addon.db.char.mounts
-		if mountType == AIR and enabled[flyingForm] then
-			return 'spell', knownSpells[flyingForm] -- One of the flying form
+		if mountType == AIR then
+			return 'spell', enabled[flyingForm] and knownSpells[flyingForm] -- One of the flying form
 		end
-		if mountType == WATER and enabled[1066] then
-			return 'spell', knownSpells[1066] -- Aquatic Form
+		if mountType == WATER and enabled[1066] and knownSpells[1066] then
+			return 'spell', 1066 -- Aquatic Form
 		end
-		if isOutdoors and enabled[783] then
-			return 'spell', knownSpells[783] -- Travel Form
+		if isOutdoors and enabled[783] and knownSpells[783] then
+			return 'spell', 783 -- Travel Form
 		elseif select(5, GetTalentInfo(2, 6)) == 2 and enabled[768] then -- Feral Swiftness
 			return 'spell', knownSpells[768] -- Cat Form
 		end
@@ -320,8 +320,8 @@ elseif playerClass == 'SHAMAN' then
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType == GROUND and addon.db.char.mounts[2645] and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
-			return 'spell', knownSpells[2645] -- Ghost Wolf
+		elseif mountType ~= AIR and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
+			return 'spell', addon.db.char.mounts[2645] and knownSpells[2645] -- Ghost Wolf
 		end
 	end
 
@@ -334,8 +334,8 @@ elseif playerClass == 'HUNTER' then
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType == GROUND and addon.db.char.mounts[5118] then
-			return 'spell', knownSpells[5118] -- Aspect of the Cheetah
+		elseif mountType ~= AIR and addon.db.char.mounts[5118] then
+			return 'spell', addon.db.char.mounts[5118] and knownSpells[5118] -- Aspect of the Cheetah
 		end
 	end
 
@@ -431,9 +431,10 @@ end
 
 local function GetActionForType(mountType, groundOnly, isMoving)
 	Debug('GetActionForType', mountType, groundOnly and "groundOnly" or "all", isMoving and "moving" or "stationary")
-	if mountType and (not groundOnly or mountType ~= AIR) then
-		return GetActionForMount(mountType, isMoving, false, IsOutdoors())
+	if groundOnly and mountType == AIR then
+		mountType = GROUND
 	end
+	return GetActionForMount(mountType, isMoving, false, IsOutdoors())
 end
 
 local function ResolveAction(button)
@@ -456,7 +457,7 @@ local function ResolveAction(button)
 			return "macrotext", dismountMacro
 		end
 	end
-	-- Handle all other actions
+	-- Try to get a mount or a spell
 	local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
 	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier]()
 	local isMoving = GetUnitSpeed("player") > 0
@@ -516,7 +517,7 @@ do
 		cprint('GetMapInfo=', GetMapInfo(), 'IsFlyableArea=', not not IsFlyableArea())
 		cprint('IsFlying=', not not IsFlying(), 'IsSwimming=', not not IsSwimming(), 'IsMoving=', GetUnitSpeed("player") > 0)
 		cprint('IsMounted=', not not IsMounted(), 'InVehicle=', not not UnitHasVehicleUI("player"))
-		cprint('dismountTest=', dismountTest, 'result=', SecureCmdOptionParse(dismountTest))
+		cprint('dismountTest=', dismountTest, 'result=', not not SecureCmdOptionParse(dismountTest))
 		cprint('|cffff7700Mounts:|r')
 		for index = 1, GetNumCompanions("MOUNT") do
 			local _, name, id, _, active = GetCompanionInfo("MOUNT", index)
