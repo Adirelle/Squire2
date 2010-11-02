@@ -236,18 +236,18 @@ local function SetButtonAction(actionType, actionData, prefix, suffix)
 end
 
 local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-	if isMoving and addon.db.char.movingAction then
-		local actionType, actionData = strsplit(':', addon.db.char.movingAction)
-		if actionType and actionData then
-			Debug('GetActionForMount (moving) =>', actionType, actionData)
-			return actionType, actionData
-		end
-	end
-	if mountType and not isMoving and not inCombat then
+	if not isMoving and not inCombat then
 		local id = ChooseMount(mountType)
 		if id then
 			Debug('GetActionForMount => spell', spellNames[id] or id)
 			return 'spell', id
+		end
+	end
+	if mountType ~= AIR and isMoving and addon.db.char.movingAction then
+		local actionType, actionData = strsplit(':', addon.db.char.movingAction)
+		if actionType and actionData then
+			Debug('GetActionForMount (moving) =>', actionType, actionData)
+			return actionType, actionData
 		end
 	end
 end
@@ -265,6 +265,10 @@ if playerClass == 'DRUID' then
 	local baseDismountTest, baseDismountMacro = dismountTest, dismountMacro
 	local t = {}
 	function addon:UPDATE_SHAPESHIFT_FORMS()
+		-- Select Swift Flight form or Flight form
+		flyingForm = knownSpells[40120] and 40120 or 33943
+		movingForms[3] = flyingForm
+		-- Test existing forms for "mount-like" ones
 		wipe(t)
 		for index = 1, GetNumShapeshiftForms() do
 			Debug('GetShapeshiftFormInfo', index, '=>', GetShapeshiftFormInfo(index))
@@ -282,10 +286,7 @@ if playerClass == 'DRUID' then
 		else
 			dismountTest, dismountMacro = baseDismountTest, baseDismountMacro
 		end
-		-- Select Swift Flight form or Flight form
-		flyingForm = knownSpells[40120] and 40120 or 33943
-		movingForms[3] = flyingForm
-		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest, dismountMacro, cancelFormTest, cancelFormMacro)
+		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest, dismountMacro)
 	end
 
 	local origGetActionForMount = GetActionForMount
@@ -294,17 +295,16 @@ if playerClass == 'DRUID' then
 		if actionType and actionData then
 			return actionType, actionData
 		end
-		local enabled = addon.db.char.mounts
 		if mountType == AIR then
-			return 'spell', enabled[flyingForm] and knownSpells[flyingForm] -- One of the flying form
-		end
-		if mountType == WATER and enabled[1066] and knownSpells[1066] then
-			return 'spell', 1066 -- Aquatic Form
-		end
-		if isOutdoors and enabled[783] and knownSpells[783] then
-			return 'spell', 783 -- Travel Form
-		elseif select(5, GetTalentInfo(2, 6)) == 2 and enabled[768] then -- Feral Swiftness
-			return 'spell', knownSpells[768] -- Cat Form
+			return 'spell', addon.db.char.mounts[flyingForm] and knownSpells[flyingForm] -- Any flying form
+		elseif mountType == WATER then
+			return 'spell', addon.db.char.mounts[1066] and knownSpells[1066] -- Aquatic Form
+		elseif mountType == GROUND then
+			if isOutdoors and addon.db.char.mounts[783] and knownSpells[783] then
+				return 'spell', 783 -- Travel Form
+			elseif select(5, GetTalentInfo(2, 6)) == 2 then -- Feral Swiftness
+				return 'spell', knownSpells[768] -- Cat Form
+			end
 		end
 	end
 
@@ -320,7 +320,7 @@ elseif playerClass == 'SHAMAN' then
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType ~= AIR and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
+		elseif mountType == GROUND and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
 			return 'spell', addon.db.char.mounts[2645] and knownSpells[2645] -- Ghost Wolf
 		end
 	end
@@ -334,7 +334,7 @@ elseif playerClass == 'HUNTER' then
 		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if actionType and actionData then
 			return actionType, actionData
-		elseif mountType ~= AIR and addon.db.char.mounts[5118] then
+		elseif mountType == GROUND and addon.db.char.mounts[5118] then
 			return 'spell', addon.db.char.mounts[5118] and knownSpells[5118] -- Aspect of the Cheetah
 		end
 	end
@@ -429,15 +429,42 @@ do
 	end
 end
 
-local function GetActionForType(mountType, groundOnly, isMoving)
-	Debug('GetActionForType', mountType, groundOnly and "groundOnly" or "all", isMoving and "moving" or "stationary")
-	if groundOnly and mountType == AIR then
-		mountType = GROUND
+local function ExploreActions(groundOnly, isMoving, isOutdoors, primary, secondary, tertiary)
+	Debug('ExploreActions', groundOnly, isMoving, isOutdoors, primary, secondary, tertiary)
+	if primary == AIR and groundOnly then
+		if secondary then
+			Debug('ExploreActions, skiping AIR type with groundOnly')
+			return ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
+		else
+			return
+		end
 	end
-	return GetActionForMount(mountType, isMoving, false, IsOutdoors())
+	local actionType, actionData = GetActionForMount(primary, isMoving, false, isOutdoors)
+	if actionType and actionData then
+		return actionType, actionData
+	end
+	if secondary then
+		Debug('ExploreActions, trying secondary')
+		actionType, actionData = ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
+		if actionType and actionData then
+			return actionType, actionData
+		end
+	end
+	if not isMoving then
+		Debug('ExploreActions, trying with moving')
+		actionType, actionData = ExploreActions(groundOnly, true, isOutdoors, primary, secondary, tertiary)
+		if actionType and actionData then
+			return actionType, actionData
+		end
+	end
+	if not isOutdoors then
+		Debug('ExploreActions, trying outdoors')
+		return ExploreActions(groundOnly, isMoving, true, primary, secondary, tertiary)
+	end
 end
 
 local function ResolveAction(button)
+	-- In-combat action
 	if button == "combat" then
 		return PrependUnshiftMacro(GetCombatAction())
 	end
@@ -460,14 +487,7 @@ local function ResolveAction(button)
 	-- Try to get a mount or a spell
 	local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
 	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier]()
-	local isMoving = GetUnitSpeed("player") > 0
-	local actionType, actionData = GetActionForType(primary, groundOnly, isMoving)
-	if (not actionType or not actionData) and secondary then
-		actionType, actionData = GetActionForType(secondary, groundOnly, isMoving)
-		if (not actionType or not actionData) and tertiary then
-			actionType, actionData = GetActionForType(tertiary, groundOnly, isMoving)
-		end
-	end
+	local actionType, actionData = ExploreActions(groundOnly, GetUnitSpeed("player") > 0, IsOutdoors(), primary or GROUND, secondary, tertiary)
 	return PrependUnshiftMacro(actionType, actionData)
 end
 
@@ -530,17 +550,19 @@ do
 				cprint('  ', GetSpellLink(id), 'known=', not not knownSpells[id], 'enabled=', not not addon.db.char.mounts[id])
 			end
 		end
+		local isOutdoors = IsOutdoors()
 		cprint('|cffff7700Tests:|r')
-		cprint('- GROUND, stationary =>', GetActionForType(GROUND, false, false))
-		cprint('- GROUND, moving =>', GetActionForType(GROUND, false, true))
-		cprint('- AIR, stationary =>', GetActionForType(AIR, false, false))
-		cprint('- AIR, moving =>', GetActionForType(AIR, false, true))
-		cprint('- AIR, stationary, ground modifier =>', GetActionForType(AIR, true, false))
-		cprint('- AIR, moving, ground modifier =>', GetActionForType(AIR, true, true))
-		cprint('- WATER, stationary =>', GetActionForType(WATER, false, false))
-		cprint('- WATER, moving =>', GetActionForType(WATER, false, true))
-		cprint('- WATER, stationary, ground modifier =>', GetActionForType(WATER, true, false))
-		cprint('- WATER, moving, ground modifier =>', GetActionForType(WATER, true, true))
+		-- groundOnly, isMoving, isOutdoors, primary, secondary, tertiary
+		cprint('- GROUND, stationary =>', ExploreActions(false, false, isOutdoors, GROUND))
+		cprint('- GROUND, moving =>', ExploreActions(false, true, isOutdoors, GROUND))
+		cprint('- AIR, stationary =>',  ExploreActions(false, false, isOutdoors, AIR))
+		cprint('- AIR, moving =>',  ExploreActions(false, true, isOutdoors, AIR))
+		cprint('- AIR, stationary, ground modifier =>',  ExploreActions(true, false, isOutdoors, AIR))
+		cprint('- AIR, moving, ground modifier =>',  ExploreActions(true, true, isOutdoors, AIR))
+		cprint('- WATER, stationary =>', ExploreActions(false, false, isOutdoors, WATER))
+		cprint('- WATER, moving =>', ExploreActions(false, true, isOutdoors, WATER))
+		cprint('- WATER, stationary, ground modifier =>', ExploreActions(true, false, isOutdoors, WATER))
+		cprint('- WATER, moving, ground modifier =>', ExploreActions(true, true, isOutdoors, WATER))
 		cprint('- in-combat action:', ResolveAction("combat"))
 		cprint('- out-of-combat action:', ResolveAction("LeftButton"))
 		cprint('- actual action:', ResolveAction(InCombatLockdown() and "combat" or "LeftButton"))
