@@ -223,6 +223,8 @@ local function SetButtonAction(actionType, actionData, prefix, suffix)
 	if actionType and actionData then
 		if actionType == 'spell' then
 			actionData = spellNames[actionData] or actionData
+		elseif actionType == 'item' then
+			actionData = tonumber(actionData) and GetItemInfo(tonumber(actionData)) or actionData
 		end
 		addon.button:SetAttribute(prefix..actionType..suffix, actionData)
 		if actionType == 'macrotext' then
