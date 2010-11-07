@@ -33,10 +33,10 @@ function addon:InitializeConfig()
 
 	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", addon.GetOptions)
 
-	panelButton = CreateFrame("Button", nil, SpellBookCompanionsFrame, "UIPanelButtonTemplate")
+	panelButton = CreateFrame("Button", "Squire2ConfigButton", SpellBookCompanionsFrame, "UIPanelButtonTemplate")
 	panelButton:SetText("Squire2")
-	panelButton:SetPoint("RIGHT", SpellBookFrameCloseButton, "LEFT", 4, 0)
-	panelButton:SetSize(70, 22)
+	panelButton:SetSize(panelButton:GetTextWidth()+10, 20)
+
 	panelButton:Hide()
 	panelButton:SetScript('OnClick', function() self:OpenConfig() end)
 end
@@ -57,6 +57,11 @@ function addon:SpellBook_UpdateCompanionsFrame()
 		return
 	end
 	panelButton:Show()
+	if Collectinator_ScanButton and Collectinator_ScanButton:IsShown() then
+		panelButton:SetPoint("RIGHT", Collectinator_ScanButton, "LEFT", 2, 0)
+	else
+		panelButton:SetPoint("RIGHT", SpellBookFrameCloseButton, "LEFT", 4, 0)
+	end
 	for i, button in ipairs(spellbuttons) do
 		button:Show()
 	end
