@@ -411,22 +411,30 @@ do
 				return actionType, actionData
 			end
 		end
+		local prefix, suffix = "", ""
 		wipe(t)
+		if addon.db.profile.autoDismount then
+			if addon.db.profile.safeDismount then
+				prefix = "/stopmacro [flying]"
+			end
+			tinsert(t, dismountTest)
+			suffix = dismountMacro
+		end
 		local waterCast = GetMacroCast(GetActionForMount(WATER, true, true))
 		local outdoorsCast = GetMacroCast(GetActionForMount(GROUND, true, true, true))
 		local indoorsCast = GetMacroCast(GetActionForMount(GROUND, true, true, false))
 		if waterCast and waterCast ~= indoorsCast then
-			tinsert(t, "[swimming]!"..waterCast)
+			tinsert(t, "[swimming]"..waterCast)
 		end
 		if outdoorsCast and outdoorsCast ~= indoorsCast then
-			tinsert(t, "[outdoors]!"..outdoorsCast)
+			tinsert(t, "[outdoors]"..outdoorsCast)
 		end
 		if indoorsCast then
-			tinsert(t, "!"..indoorsCast)
+			tinsert(t, indoorsCast)
 		end
 		Debug('GetCombatAction', unpack(t))
 		if #t > 0 then
-			return 'macrotext', "/cast "..table.concat(t, ";")
+			return 'macrotext', strjoin("\n", prefix, "/cast "..table.concat(t, ";"), suffix)
 		end
 	end
 end
@@ -465,10 +473,11 @@ local function ExploreActions(groundOnly, isMoving, isOutdoors, primary, seconda
 	end
 end
 
+local commands = {}
 local function ResolveAction(button)
 	-- In-combat action
 	if button == "combat" then
-		return PrependUnshiftMacro(GetCombatAction())
+		return GetCombatAction()
 	end
 	-- Handle dismounting
 	local canDismount = SecureCmdOptionParse(dismountTest)
