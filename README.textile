@@ -11,21 +11,22 @@ h3. Features
 
 h3. How to use Squire2
 
-You can open the Squire2 configuration using the /sq2 or /squire2 chat commands. There is also a button in the top left corner of the mount spellbook.
+You can open the Squire2 configuration using the /sq2 or /squire2 chat commands and there is a button in the top left corner of the mount spellbook.
 
-From there you can use the "Macro" button to pick up the macro and put it in any action button. You can also define a keybinding (including mouse buttons) to use Squire2.
+From there you can use the "Macro" button to pick up the macro and put it in any action button. You can also define a keybinding to use Squire2.
 
-The "Toggle spellbook" button just helps opening the Spellbook directly to the mount page.
+The "Toggle spellbook" button opens the spellbook directly to the "mounts" tab.
 
 h4. Mount selection
 
-You can select which mounts Squire2 is allow to use using the Mounts spellbook. Squire2 adds a little checkbox in the bottom right corner of each mount icon. Uncheck it to have Squire2 ignore the mount.
+You can select which mounts Squire2 is allowed to use in the mount spellbook. Check or uncheck the small checkboxes in the bottom right corner of every mounts.
 
 h4. Other options
 
 * Ground modifier: select a modifier to enforce Squire2 to select a ground mount even if flying mounts are usable.
-* Dismount/exit vehicle/cancel shapeshift: if checked, Squire2 makes your character dismount when mounted instead of trying to use another mount.
-* ... but not when flying: this prevents Squire2 from having your character dismount when flying. Useful to prevent an horrible death if you accidently hit the keybinding while in the middle of the sky. 
+* Dismount keybinding: a keybinding to dismount.
+* Dismount/exit vehicle/cancel shapeshift: if checked when mounted, Squire2 makes your character dismount instead of trying to use another mount (or spell).
+* ... but not when flying: this prevents dismounting when flying. Useful to prevent an horrible death if you accidently hit the keybinding while in the middle of the sky.
 * Combat action: an action to be used in combat. This overrides the internal macro Squire2 uses and thus ignore all clever features.
 * Moving action: an action to be used while moving. It is also used as a default combat action.
 
