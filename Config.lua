@@ -192,11 +192,13 @@ end
 --------------------------------------------------------------------------------
 
 local SQUIRE2_BINDING = "CLICK Squire2Button:LeftButton"
+local DISMOUNT_BINDING = "CLICK Squire2Button:dismount"
 
-local function UpdateBindingKey(key)
+local function BindingSet(info, key)
 	-- Based on code provided by Phanx
+	local binding = info.arg
 	if key == "" then key = nil end
-	local first, second = GetBindingKey(SQUIRE2_BINDING)
+	local first, second = GetBindingKey(binding)
 	Debug("UpdateBindingKey", "key=",key, "first=", first, "second=", second)
 	if first == key then return end
 	if first then
@@ -214,14 +216,18 @@ local function UpdateBindingKey(key)
 			print(KEY_UNBOUND_ERROR:format(action))
 		end
 		Debug("  SetBinding", key)
-		SetBinding(key, SQUIRE2_BINDING)
+		SetBinding(key, binding)
 	end
 	if second then
 		Debug("  SetBinding", second)
-		SetBinding(second, SQUIRE2_BINDING)
+		SetBinding(second, binding)
 	end
-	Debug("  =>", GetBindingKey(SQUIRE2_BINDING))
+	Debug("  =>", GetBindingKey(binding))
 	SaveBindings(GetCurrentBindingSet())
+end
+
+local function BindingGet(info)
+	return GetBindingKey(info.arg)
 end
 
 --------------------------------------------------------------------------------
@@ -262,13 +268,19 @@ function addon.GetOptions()
 					func = function() ToggleSpellBook(BOOKTYPE_MOUNT) end,
 					order = 11,
 				},
+				_bindings = {
+					name = L["Bindings"],
+					type = 'header',
+					order = 20,
+				},
 				keybinding = {
 					name = L["Squire2 binding"],
 					desc = L["Select a binding to use Squire2 without a macro."],
 					type = 'keybinding',
-					get = function() return GetBindingKey(SQUIRE2_BINDING) end,
-					set = function(_, value) UpdateBindingKey(value) end,
-					order = 15,
+					arg = SQUIRE2_BINDING,
+					get = BindingGet,
+					set = BindingSet,
+					order = 25,
 				},
 				autoDismount = {
 					name = L['Dismount/exit vehicle/cancel shapeshift'],
@@ -286,6 +298,15 @@ function addon.GetOptions()
 					set = function(_, value) addon.db.profile.safeDismount = value end,
 					disabled = function() return not addon.db.profile.autoDismount end,
 					order = 30,
+				},
+				dismountKeybinding = {
+					name = L["Dismount"],
+					desc = L["Select a binding to dismount."],
+					type = 'keybinding',
+					arg = DISMOUNT_BINDING,
+					get = BindingGet,
+					set = BindingSet,
+					order = 16,
 				},
 				groundModifier = {
 					name = L['Ground modifier'],
