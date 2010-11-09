@@ -32,6 +32,7 @@ function addon:InitializeConfig()
 	end
 
 	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", addon.GetOptions)
+	AceConfigDialog:SetDefaultSize("Squire2", 600, 325)
 
 	panelButton = CreateFrame("Button", "Squire2ConfigButton", SpellBookCompanionsFrame, "UIPanelButtonTemplate")
 	panelButton:SetText("Squire2")
@@ -266,7 +267,7 @@ function addon.GetOptions()
 					name = L['Toggle spellbook'],
 					type = 'execute',
 					func = function() ToggleSpellBook(BOOKTYPE_MOUNT) end,
-					order = 11,
+					order = 15,
 				},
 				_bindings = {
 					name = L["Bindings"],
@@ -274,30 +275,13 @@ function addon.GetOptions()
 					order = 20,
 				},
 				keybinding = {
-					name = L["Squire2 binding"],
+					name = L["Squire2"],
 					desc = L["Select a binding to use Squire2 without a macro."],
 					type = 'keybinding',
 					arg = SQUIRE2_BINDING,
 					get = BindingGet,
 					set = BindingSet,
 					order = 25,
-				},
-				autoDismount = {
-					name = L['Dismount/exit vehicle/cancel shapeshift'],
-					desc = L['Check this to dismount, exit vehicle or cancel shapeshift resp. when on a mount, in a vehicle or shapeshifted.'],
-					type = 'toggle',
-					get = function() return addon.db.profile.autoDismount end,
-					set = function(_, value) addon.db.profile.autoDismount = value end,
-					order = 20,
-				},
-				safeDismount = {
-					name = L['... but not when flying'],
-					desc = L['Check this not to dismount/exit vehicle/cancel shapeshift when flying.'],
-					type = 'toggle',
-					get = function() return addon.db.profile.safeDismount end,
-					set = function(_, value) addon.db.profile.safeDismount = value end,
-					disabled = function() return not addon.db.profile.autoDismount end,
-					order = 30,
 				},
 				dismountKeybinding = {
 					name = L["Dismount"],
@@ -306,7 +290,7 @@ function addon.GetOptions()
 					arg = DISMOUNT_BINDING,
 					get = BindingGet,
 					set = BindingSet,
-					order = 16,
+					order = 30,
 				},
 				groundModifier = {
 					name = L['Ground modifier'],
@@ -322,7 +306,36 @@ function addon.GetOptions()
 						shift = SHIFT_KEY,
 						rightbutton = L["Right mouse button"],
 					},
+					order = 35,
+				},
+				_dismount = {
+					name = L['Dismount'],
+					type = 'header',
 					order = 40,
+				},
+				autoDismount = {
+					name = L['Dismount/exit vehicle/cancel shapeshift'],
+					desc = L['Check this to dismount, exit vehicle or cancel shapeshift resp. when on a mount, in a vehicle or shapeshifted.'],
+					type = 'toggle',
+					width = 'full',
+					get = function() return addon.db.profile.autoDismount end,
+					set = function(_, value) addon.db.profile.autoDismount = value end,
+					order = 45,
+				},
+				safeDismount = {
+					name = L['... but not when flying'],
+					desc = L['Check this not to dismount/exit vehicle/cancel shapeshift when flying.'],
+					type = 'toggle',
+					width = 'full',
+					get = function() return addon.db.profile.safeDismount end,
+					set = function(_, value) addon.db.profile.safeDismount = value end,
+					disabled = function() return not addon.db.profile.autoDismount end,
+					order = 50,
+				},
+				_actions = {
+					name = L['Action overrides'],
+					type = 'header',
+					order = 55,
 				},
 				combatAction = {
 					name = L['Combat action'],
@@ -330,7 +343,7 @@ function addon.GetOptions()
 					usage = L['Drag and drop an action or right-click to clear.'],
 					type = 'input',
 					control = 'ActionSlot',
-					order = 50,
+					order = 60,
 					get = function() return addon.db.char.combatAction end,
 					set = function(_, value) addon.db.char.combatAction = value end,
 					validate = function(_, value)
@@ -343,7 +356,7 @@ function addon.GetOptions()
 					usage = L['Drag and drop an action or right-click to clear.'],
 					type = 'input',
 					control = 'ActionSlot',
-					order = 50,
+					order = 65,
 					get = function() return addon.db.char.movingAction end,
 					set = function(_, value) addon.db.char.movingAction = value end,
 					validate = function(_, value)
