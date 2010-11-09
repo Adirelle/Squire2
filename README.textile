@@ -1,14 +1,41 @@
-Squire2 is basically Squire rewritten from scratch for 4.0/Cataclysm. I felt the Squire code
-became unsuitable to handle the several changes to mounts ; both mount features and API have
-been slightly changed.
+Squire2 is basically Squire rewritten from scratch for 4.0/Cataclysm. I felt the Squire code became unsuitable to handle the several changes to mounts ; both mount features and API have been slightly changed.
 
-This is a work in progress. Most of core features are in but some bugs and glitches still need to be ironed out.
+h3. Features
+
+* Can be used as a macro or with a keybinding.
+* Automatically scan available mounts and movement-related spells (including Aspect of the Cheetah, Travel/Aquatic/Flight forms and Ghost Wolf).
+* Random mount selection, trying not to use the same mount twice in a row.
+* Handle some special mounts like Ahn'Quiraj ones, the Sea Turtle and the Abyssal Seahorse.
+* Customizable moving and combat actions.
+* Support "/console autoUnshift 0" and "/console autoDismount 0" settings, thanks to Phanx.
+
+h3. How to use Squire2
+
+You can open the Squire2 configuration using the /sq2 or /squire2 chat commands. There is also a button in the top left corner of the mount spellbook.
+
+From there you can use the "Macro" button to pick up the macro and put it in any action button. You can also define a keybinding (including mouse buttons) to use Squire2.
+
+The "Toggle spellbook" button just helps opening the Spellbook directly to the mount page.
+
+h4. Mount selection
+
+You can select which mounts Squire2 is allow to use using the Mounts spellbook. Squire2 adds a little checkbox in the bottom right corner of each mount icon. Uncheck it to have Squire2 ignore the mount.
+
+h4. Other options
+
+* Ground modifier: select a modifier to enforce Squire2 to select a ground mount even if flying mounts are usable.
+* Dismount/exit vehicle/cancel shapeshift: if checked, Squire2 makes your character dismount when mounted instead of trying to use another mount.
+* ... but not when flying: this prevents Squire2 from having your character dismount when flying. Useful to prevent an horrible death if you accidently hit the keybinding while in the middle of the sky. 
+* Combat action: an action to be used in combat. This overrides the internal macro Squire2 uses and thus ignore all clever features.
+* Moving action: an action to be used while moving. It is also used as a default combat action.
+
+h3. Differences with Squire
 
 There is no much visible differences from Squire :
-* Does not dynamically update the macro anymore, do it on demand instead.
+* Does not dynamically update the macro anymore.
 * Configuration is done from the "Mounts" tab of the spellbook.
 * Use Ace3 for configuration UI.
-* Accept items and macros, as well as spells, as combat action.
+* Accept items and macros, as well as spells, as moving and combat actions.
 
 h3. User feedback
 
