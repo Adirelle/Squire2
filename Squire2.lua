@@ -298,7 +298,7 @@ if playerClass == 'DRUID' then
 			return actionType, actionData
 		end
 		if mountType == AIR then
-			return 'spell', addon.db.char.mounts[flyingForm] and knownSpells[flyingForm] -- Any flying form
+			return 'spell', addon.db.char.mounts[flyingForm] and knownSpells[flyingForm] and IsUsableSpell(flyingForm) -- Any flying form
 		elseif mountType == WATER then
 			return 'spell', addon.db.char.mounts[1066] and knownSpells[1066] -- Aquatic Form
 		elseif mountType == GROUND then
