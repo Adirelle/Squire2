@@ -104,15 +104,23 @@ function addon:PLAYER_REGEN_DISABLED()
 	addon:SetupButton("combat")
 end
 
-local MACRO_NAME, MACRO_ICON, MACRO_BODY = "Squire2", 251, "/click [button:2] Squire2Button RightButton; Squire2Button"
+local MACRO_NAME, MACRO_ICON, MACRO_BODY = "Squire2", [[Interface\Icons\Ability_Mount_RidingHorse]], "/click [button:2] Squire2Button RightButton; Squire2Button"
+local function GetMacroIconIndex(texture)
+	for index = 1, GetNumMacroIcons() do
+		if GetMacroIconInfo(index) == texture then
+			return index
+		end
+	end
+	return 1
+end
 function addon:SetupMacro(create)
 	local index = GetMacroIndexByName(MACRO_NAME)
 	if index == 0 then
 		if create then
-			return CreateMacro(MACRO_NAME, MACRO_ICON, MACRO_BODY, 0)
+			return CreateMacro(MACRO_NAME, GetMacroIconIndex(MACRO_ICON), MACRO_BODY, 0)
 		end
 	else
-		return EditMacro(index, MACRO_NAME, MACRO_ICON, MACRO_BODY)
+		return EditMacro(index, MACRO_NAME, GetMacroIconIndex(MACRO_ICON), MACRO_BODY)
 	end
 end
 
