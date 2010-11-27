@@ -492,10 +492,10 @@ local function ResolveAction(button)
 			return
 		end
 	elseif canDismount then
-		if not addon.db.profile.autoDismount or (IsFlying() and addon.db.profile.safeDismount) then
-			return
-		else
+		if TestModifier("dismountModifier") or addon.db.profile.autoDismount and not (IsFlying() and addon.db.profile.safeDismount) then
 			return "macrotext", dismountMacro
+		else
+			return
 		end
 	end
 	-- Try to get a mount or a spell
