@@ -417,6 +417,14 @@ do
 	end
 end
 
+local modifierConds = {
+	any = "modifier",
+	control = "modifier:ctrl",
+	alt = "modifier:alt",
+	shift = "modifier:shift",
+	rightbutton = "button:2",
+}
+
 local GetCombatAction
 do
 	local t = {}
@@ -432,7 +440,12 @@ do
 		wipe(t)
 		if addon.db.profile.autoDismount then
 			if addon.db.profile.safeDismount then
-				prefix = "/stopmacro [flying]"
+				local modifier = modifierConds[addon.db.profile.dismountModifier or false]
+				if modifier then
+					prefix = "/stopmacro [flying,no"..modifier.."]"
+				else
+					prefix = "/stopmacro [flying]"
+				end
 			end
 			tinsert(t, dismountTest)
 			suffix = dismountMacro
