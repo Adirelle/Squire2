@@ -71,6 +71,7 @@ function addon:ADDON_LOADED(_, name)
 	end
 
 	self:SetupMacro()
+	self:UpdateStaticActions()
 end
 eventHandler:RegisterEvent('ADDON_LOADED')
 
@@ -243,6 +244,10 @@ local function SetButtonAction(actionType, actionData, prefix, suffix)
 	Debug('SetButtonAction', actionType, actionData, prefix, suffix)
 end
 
+function addon:UpdateStaticActions()
+	SetButtonAction("macrotext", dismountMacro, "", "-dismount")
+end
+
 local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 	if not isMoving and not inCombat then
 		local id = ChooseMount(mountType)
@@ -295,6 +300,7 @@ if playerClass == 'DRUID' then
 			dismountTest, dismountMacro = baseDismountTest, baseDismountMacro
 		end
 		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest, dismountMacro)
+		self:UpdateStaticActions()
 	end
 
 	local origGetActionForMount = GetActionForMount
@@ -513,6 +519,7 @@ local function ResolveAction(button)
 end
 
 function addon:SetupButton(button)
+	if button == "dismount" then return end
 	Debug('SetupButton', button)
 	SetButtonAction(ResolveAction(button))
 end
