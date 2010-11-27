@@ -316,7 +316,6 @@ function addon.GetOptions()
 					get = function() return addon.db.profile.dismountModifier end,
 					set = function(_, value) addon.db.profile.dismountModifier = value end,
 					values = modifierList,
-					disabled = function() return addon.db.profile.autoDismount and not addon.db.profile.safeDismount end,
 					order = 37,
 				},
 				_dismount = {

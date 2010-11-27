@@ -39,6 +39,7 @@ local DEFAULTS = {
 		autoDismount = true,
 		safeDismount = true,
 		groundModifier = "any",
+		dismountMidifier = "none",
 	},
 	char = { mounts = { ['*'] = true } },
 }
@@ -497,17 +498,11 @@ local function ResolveAction(button)
 	end
 	-- Handle dismounting
 	local canDismount = SecureCmdOptionParse(dismountTest)
-	Debug('canDismount', canDismount)
-	if button == "dismount" or TestModifier("dismountModifier") then
-		if canDismount then
+	Debug('canDismount:', not not canDismount)
+	if canDismount then
+		if TestModifier("dismountModifier") or (addon.db.profile.autoDismount and not (addon.db.profile.safeDismount and IsFlying())) then
 			return "macrotext", dismountMacro
-		else
-			return
-		end
-	elseif canDismount then
-		if TestModifier("dismountModifier") or addon.db.profile.autoDismount and not (IsFlying() and addon.db.profile.safeDismount) then
-			return "macrotext", dismountMacro
-		else
+		elseif addon.db.profile.autoDismount and addon.db.profile.safeDismount and IsFlying() then
 			return
 		end
 	end
