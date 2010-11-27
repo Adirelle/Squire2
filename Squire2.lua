@@ -97,7 +97,7 @@ function addon:SpellBook_UpdateCompanionsFrame()
 end
 
 function addon.ButtonPreClick(_, button)
-	if not InCombatLockdown() then
+	if Squire2Button:CanChangeAttribute() and button ~= "dismount" then
 		addon:SetupButton(button)
 	end
 end
@@ -528,7 +528,6 @@ local function ResolveAction(button)
 end
 
 function addon:SetupButton(button)
-	if button == "dismount" then return end
 	Debug('SetupButton', button)
 	SetButtonAction(ResolveAction(button))
 end
