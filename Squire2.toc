@@ -7,8 +7,6 @@
 ## SavedVariables: Squire2DB
 ## X-Date: @project-date-iso@
 ## OptionalDeps: Ace3, LibMounts-1.0, AdiDebug
-## LoadManagers: AddonLoader
-## X-LoadOn-Always: delayed
 
 #@no-lib-strip@
 libs\LibStub\LibStub.lua
