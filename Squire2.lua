@@ -350,7 +350,6 @@ elseif playerClass == 'HUNTER' then
 end
 
 local modifierTests = {
-	none = function() return false end,
 	any = IsModifierKeyDown,
 	control = IsControlKeyDown,
 	alt = IsAltKeyDown,
@@ -359,8 +358,8 @@ local modifierTests = {
 }
 
 local function TestModifier(name)
-	local modifier = addon.db.profile[name]
-	return name and modifierTests[name]()
+	local test = modifierTests[addon.db.profile[name] or false]
+	return test and test() or false
 end
 
 local function GetMacroCast(actionType, actionData)
