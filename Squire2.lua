@@ -562,13 +562,31 @@ do
 		local str = strjoin(" ", tocoloredstringall(...)):gsub("= ", "=")
 		return print(str)
 	end
+	
+	local function DumpSettings(key, value)
+		if key then
+			return tostring(key).."=", value, DumpSettings(next(addon.db.profile, key))
+		end
+	end
 
 	function SlashCmdList.TESTSQUIRE()
 		cprint('|cffff7700=== Squire2 test ===|r')
-		cprint('Version:', GetAddOnMetadata("SQUIRE2", "Version"))
-		cprint("Class=", select(2, UnitClass("player")), "Level=", UnitLevel("player"))
+		cprint("Locale:", GetLocale(), "BuildInfo:", GetBuildInfo())
+		local ehName, ehEnabled = "unknown", "unknown"
+		if BugGrabber then
+			ehName, ehEnabled = "BugGrabber", true
+		elseif Swatter then
+			ehName, ehEnabled = "Swatter", type(SwatterData) == "table" and SwatterData.enabled
+		elseif geterrorhandler() == _ERRORMESSAGE then
+			ehName, ehEnabled = "built-in", GetCVarBool("scriptErrors")
+		end
+		cprint('Error handler:', ehName, 'enabled=', ehEnabled)
+		cprint('Addon version:', GetAddOnMetadata(addonName, "Version"))
 		cprint('LibMounts-1.0 version:', LMversion)
 		cprint('LibMounts-1.0 data version:', select(2, LibStub('LibMounts-1.0_Data')))
+		cprint("Class=", select(2, UnitClass("player")), "Level=", UnitLevel("player"))
+		cprint('db.profile:', DumpSettings(next(addon.db.profile)))
+		cprint('autoDismount=', GetCVarBool('autoDismount'), 'autoDismountFyling=', GetCVarBool('autoDismountFyling'), 'autoUnshift=', GetCVarBool('autoUnshift'))
 		cprint('LibMounts GetCurrentMountType:', LibMounts:GetCurrentMountType())
 		cprint('GetMapInfo=', GetMapInfo(), 'IsFlyableArea=', not not IsFlyableArea())
 		cprint('IsFlying=', not not IsFlying(), 'IsSwimming=', not not IsSwimming(), 'IsMoving=', GetUnitSpeed("player") > 0)
@@ -583,7 +601,7 @@ do
 		if addon.mountSpells then
 			cprint('|cffff7700Spells:|r')
 			for i, id in ipairs(addon.mountSpells) do
-				cprint('  ', GetSpellLink(id), 'known=', not not knownSpells[id], 'enabled=', not not addon.db.char.mounts[id])
+				cprint('  ', GetSpellLink(id), 'known=', not not knownSpells[id], 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id))
 			end
 		end
 		local isOutdoors = IsOutdoors()
