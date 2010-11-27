@@ -132,6 +132,7 @@ end
 
 BINDING_HEADER_SQUIRE2 = "Squire2"
 _G["BINDING_NAME_CLICK Squire2Button:LeftButton"] = L["Use Squire2"]
+_G["BINDING_NAME_CLICK Squire2Button:dismount"] = L["Dismount"]
 
 SLASH_SQUIRE1 = "/squire2"
 SLASH_SQUIRE2 = "/squire"
