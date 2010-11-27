@@ -247,6 +247,14 @@ end
 -- Options
 --------------------------------------------------------------------------------
 
+local modifierList = {
+	none = L['None'],
+	any = L['Any'],
+	control = CTRL_KEY,
+	alt = ALT_KEY,
+	shift = SHIFT_KEY,
+	rightbutton = L["Right mouse button"],
+}
 
 local options
 function addon.GetOptions()
@@ -298,15 +306,18 @@ function addon.GetOptions()
 					type = 'select',
 					get = function() return addon.db.profile.groundModifier end,
 					set = function(_, value) addon.db.profile.groundModifier = value end,
-					values = {
-						none = L['None'],
-						any = L['Any'],
-						control = CTRL_KEY,
-						alt = ALT_KEY,
-						shift = SHIFT_KEY,
-						rightbutton = L["Right mouse button"],
-					},
+					values = modifierList,
 					order = 35,
+				},
+				dismountModifier = {
+					name = L['Dismount modifier'],
+					desc = L['Select a modifier to enforce dismounting, even mid-air.'],
+					type = 'select',
+					get = function() return addon.db.profile.dismountModifier end,
+					set = function(_, value) addon.db.profile.dismountModifier = value end,
+					values = modifierList,
+					disabled = function() return addon.db.profile.autoDismount and not addon.db.profile.safeDismount end,
+					order = 37,
 				},
 				_dismount = {
 					name = L['Dismount'],

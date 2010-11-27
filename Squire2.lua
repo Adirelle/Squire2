@@ -341,7 +341,7 @@ elseif playerClass == 'HUNTER' then
 
 end
 
-local groundModifierCheck = {
+local modifierTests = {
 	none = function() return false end,
 	any = IsModifierKeyDown,
 	control = IsControlKeyDown,
@@ -349,6 +349,11 @@ local groundModifierCheck = {
 	shift = IsShiftKeyDown,
 	rightbutton = function() return GetMouseButtonClicked() == "RightButton" end,
 }
+
+local function TestModifier(name)
+	local modifier = addon.db.profile[name]
+	return name and modifierTests[name]()
+end
 
 local function GetMacroCast(actionType, actionData)
 	if not actionData then return end
@@ -480,7 +485,7 @@ local function ResolveAction(button)
 	-- Handle dismounting
 	local canDismount = SecureCmdOptionParse(dismountTest)
 	Debug('canDismount', canDismount)
-	if button == "dismount" then
+	if button == "dismount" or TestModifier("dismountModifier") then
 		if canDismount then
 			return "macrotext", dismountMacro
 		else
@@ -495,7 +500,7 @@ local function ResolveAction(button)
 	end
 	-- Try to get a mount or a spell
 	local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
-	local groundOnly = groundModifierCheck[addon.db.profile.groundModifier]()
+	local groundOnly = TestModifier("groundModifier")
 	local actionType, actionData = ExploreActions(groundOnly, GetUnitSpeed("player") > 0, IsOutdoors(), primary or GROUND, secondary, tertiary)
 	return PrependUnshiftMacro(actionType, actionData)
 end
