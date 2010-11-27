@@ -12,10 +12,8 @@ _G[addonName] = addon
 --------------------------------------------------------------------------------
 
 local Debug
-if tekDebug then
-	local frame = tekDebug:GetFrame(addonName)
-	local strjoin, tostringall = strjoin, tostringall
-	function Debug(...) frame:AddMessage(strjoin(" ", tostringall(...))) end
+if AdiDebug then
+	Debug = AdiDebug:GetSink(addonName)
 else
 	function Debug() end
 end
