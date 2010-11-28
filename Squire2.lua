@@ -562,10 +562,10 @@ do
 		local str = strjoin(" ", tocoloredstringall(...)):gsub("= ", "=")
 		return print(str)
 	end
-	
-	local function DumpSettings(key, value)
+
+	local function DumpSettings(t, key, value)
 		if key then
-			return tostring(key).."=", value, DumpSettings(next(addon.db.profile, key))
+			return tostring(key).."=", value, DumpSettings(t, next(t, key))
 		end
 	end
 
@@ -585,7 +585,8 @@ do
 		cprint('LibMounts-1.0 version:', LMversion)
 		cprint('LibMounts-1.0 data version:', select(2, LibStub('LibMounts-1.0_Data')))
 		cprint("Class=", select(2, UnitClass("player")), "Level=", UnitLevel("player"))
-		cprint('db.profile:', DumpSettings(next(addon.db.profile)))
+		cprint('db.profile:', DumpSettings(addon.db.profile, next(addon.db.profile)))
+		cprint('db.char:', DumpSettings(addon.db.char, next(addon.db.char)))
 		cprint('autoDismount=', GetCVarBool('autoDismount'), 'autoDismountFyling=', GetCVarBool('autoDismountFyling'), 'autoUnshift=', GetCVarBool('autoUnshift'))
 		cprint('LibMounts GetCurrentMountType:', LibMounts:GetCurrentMountType())
 		cprint('GetMapInfo=', GetMapInfo(), 'IsFlyableArea=', not not IsFlyableArea())
