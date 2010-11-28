@@ -39,7 +39,7 @@ local DEFAULTS = {
 		autoDismount = true,
 		safeDismount = true,
 		groundModifier = "any",
-		dismountMidifier = "none",
+		dismountModifier = "none",
 	},
 	char = { mounts = { ['*'] = true } },
 }
