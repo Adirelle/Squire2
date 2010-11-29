@@ -237,6 +237,7 @@ local function SetButtonAction(actionType, actionData, prefix, suffix)
 		end
 		addon.button:SetAttribute(prefix..actionType..suffix, actionData)
 		if actionType == 'macrotext' then
+			addon.button:SetAttribute(prefix..'macro'..suffix, nil)
 			actionType = 'macro'
 		end
 		addon.button:SetAttribute(prefix..'type'..suffix, actionType)
