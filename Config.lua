@@ -32,7 +32,7 @@ function addon:InitializeConfig()
 	end
 
 	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", addon.GetOptions)
-	AceConfigDialog:SetDefaultSize("Squire2", 600, 325)
+	AceConfigDialog:SetDefaultSize("Squire2", 600, 375)
 
 	panelButton = CreateFrame("Button", "Squire2ConfigButton", SpellBookCompanionsFrame, "UIPanelButtonTemplate")
 	panelButton:SetText("Squire2")
@@ -260,7 +260,7 @@ local options
 function addon.GetOptions()
 	if not options then
 		options = {
-			name = "Squire2",
+			name = format("Squire2 %s", GetAddOnMetadata("Squire2", "Version")),
 			type = "group",
 			disabled = function() return InCombatLockdown() end,
 			args = {
