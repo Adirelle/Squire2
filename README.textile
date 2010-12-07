@@ -1,3 +1,5 @@
+Squire2 helps you making the most of all your mounts and moving spells. It selects a mount or spell that fits the place you are, randomly choosing a mount if several ones are available. Squire2 is highly configurable, letting you choose which mount and spell to use or not.
+
 Squire2 is basically Squire rewritten from scratch for 4.0/Cataclysm. I felt the Squire code became unsuitable to handle the several changes to mounts ; both mount features and API have been slightly changed.
 
 h3. Features

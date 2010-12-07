@@ -50,6 +50,14 @@ eventHandler:SetScript('OnEvent', function(_, event, ...) return addon[event](ad
 function addon:ADDON_LOADED(_, name)
 	if name ~= addonName then return end
 	self.db = LibStub('AceDB-3.0'):New(addonName.."DB", DEFAULTS, true)
+	
+	-- Clean up invalid actions because of buggy AceGUI-3.0-SharedMediaWidgets
+	if strmatch(self.db.profile.combatAction, "nil") then
+		self.db.profile.combatAction = nil
+	end
+	if strmatch(self.db.profile.movingAction, "nil") then
+		self.db.profile.movingAction = nil
+	end
 
 	local button = CreateFrame("Button", "Squire2Button", nil, "SecureActionButtonTemplate")
 	button:RegisterForClicks("AnyUp")
