@@ -30,6 +30,22 @@ local _, playerClass = UnitClass('player')
 local LibMounts, LMversion = LibStub("LibMounts-1.0")
 local AIR, GROUND, WATER = LibMounts.AIR, LibMounts.GROUND, LibMounts.WATER
 
+local MOUNTS_BY_TYPE = {
+	[AIR] = LibMounts:GetMountList(AIR),
+	[GROUND] = LibMounts:GetMountList(GROUND),
+	[WATER] = LibMounts:GetMountList(WATER),
+	[LibMounts.AHNQIRAJ] = LibMounts:GetMountList(LibMounts.AHNQIRAJ),
+	[LibMounts.VASHJIR] = LibMounts:GetMountList(LibMounts.VASHJIR),
+}
+
+local RUNNING_WILD_ID = 87840
+
+-- Unknown at login
+local RUNNING_WILD_NAME
+
+-- 0 to only list "normal" mounts, -1 to include Running Wild
+local FIRST_ITERATOR_STEP = 0
+
 --------------------------------------------------------------------------------
 -- Initializing
 --------------------------------------------------------------------------------
@@ -50,7 +66,7 @@ eventHandler:SetScript('OnEvent', function(_, event, ...) return addon[event](ad
 function addon:ADDON_LOADED(_, name)
 	if name ~= addonName then return end
 	self.db = LibStub('AceDB-3.0'):New(addonName.."DB", DEFAULTS, true)
-	
+
 	-- Clean up invalid actions because of buggy AceGUI-3.0-SharedMediaWidgets
 	if strmatch(tostring(self.db.profile.combatAction), "nil") then
 		self.db.profile.combatAction = nil
@@ -151,6 +167,24 @@ function SlashCmdList.SQUIRE()
 end
 
 ----------------------------------------------
+-- Mount iterator (required to handle Running Wild)
+----------------------------------------------
+
+local function mountIterator(num, index)
+	index = index + 1
+	if index == 0 then
+		return index, RUNNING_WILD_ID, not not UnitBuff("player", RUNNING_WILD_NAME)
+	elseif index <= num then
+		local found, _, id, _, active = GetCompanionInfo("MOUNT", index)
+		return index, id, active
+	end
+end
+
+local function IterateMounts()
+	return mountIterator, GetNumCompanions("MOUNT"), FIRST_ITERATOR_STEP
+end
+
+----------------------------------------------
 -- Known spell cache
 ----------------------------------------------
 
@@ -168,6 +202,7 @@ local spellNames = setmetatable({}, {__index = function(t, id)
 		return id
 	end
 end})
+
 local knownSpells = setmetatable({}, {__index = function(t,id)
 	local name = spellNames[id]
 	local isKnown = name and GetSpellInfo(name) or false
@@ -178,7 +213,19 @@ end})
 
 function addon:SPELLS_CHANGED(event)
 	wipe(knownSpells)
+
+	-- Worgen's "Running Wild" support
+	if not RUNNING_WILD_NAME and knownSpells[RUNNING_WILD_ID] then
+		RUNNING_WILD_NAME = spellNames[RUNNING_WILD_ID]
+		MOUNTS_BY_TYPE[GROUND][RUNNING_WILD_ID] = true
+		FIRST_ITERATOR_STEP = -1	
+		if not addon.mountSpells then
+			addon.mountSpells = {}
+		end
+		tinsert(addon.mountSpells, RUNNING_WILD_ID)
+	end
 end
+
 function addon:PLAYER_ENTERING_WORLD(event)
 	return self:SPELLS_CHANGED(event)
 end
@@ -192,8 +239,7 @@ local mountHistory = {}
 function addon:COMPANION_UPDATE(event, type)
 	if type == 'MOUNT' then
 		Debug(event, type)
-		for index = 1, GetNumCompanions("MOUNT") do
-			local id, _, active = select(3, GetCompanionInfo("MOUNT", index))
+		for index, id, active in IterateMounts() do
 			if active then
 				Debug('Action mount:', id)
 				mountHistory[id] = time()
@@ -207,16 +253,10 @@ end
 -- Core logic
 ----------------------------------------------
 
-local mountsByType = {}
 function ChooseMount(mountType)
-local mounts = mountsByType[mountType]
-	if not mounts then
-		mounts = LibMounts:GetMountList(mountType)
-		mountsByType[mountType] = mounts
-	end
+	local mounts = MOUNTS_BY_TYPE[mountType]
 	local oldestTime, oldestId
-	for index = 1, GetNumCompanions("MOUNT") do
-		local id, _, active = select(3, GetCompanionInfo("MOUNT", index))
+	for index, id, active in IterateMounts() do
 		if active then
 			mountHistory[id] = time()
 		end
@@ -603,10 +643,11 @@ do
 		cprint('IsMounted=', not not IsMounted(), 'InVehicle=', not not UnitHasVehicleUI("player"))
 		cprint('dismountTest=', dismountTest, 'result=', not not SecureCmdOptionParse(dismountTest))
 		cprint('|cffff7700Mounts:|r')
-		for index = 1, GetNumCompanions("MOUNT") do
-			local _, name, id, _, active = GetCompanionInfo("MOUNT", index)
-			local ground, air, water = LibMounts:GetMountInfo(id)
-			cprint('  ', GetSpellLink(id), 'active=', not not active, 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id), "type=", water and "WATER" or air and "AIR" or ground and "GROUND" or "")
+		for index, id, active in IterateMounts() do
+			if index > 0 then -- Filter out added mounts
+				local ground, air, water = LibMounts:GetMountInfo(id)
+				cprint('  ', GetSpellLink(id), 'active=', not not active, 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id), "type=", 		water and "WATER" or air and "AIR" or ground and "GROUND" or "")
+			end
 		end
 		if addon.mountSpells then
 			cprint('|cffff7700Spells:|r')
@@ -632,3 +673,4 @@ do
 		cprint('- actual action:', ResolveAction(InCombatLockdown() and "combat" or "LeftButton"))
 	end
 end
+
