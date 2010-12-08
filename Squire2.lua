@@ -52,10 +52,10 @@ function addon:ADDON_LOADED(_, name)
 	self.db = LibStub('AceDB-3.0'):New(addonName.."DB", DEFAULTS, true)
 	
 	-- Clean up invalid actions because of buggy AceGUI-3.0-SharedMediaWidgets
-	if strmatch(self.db.profile.combatAction, "nil") then
+	if strmatch(tostring(self.db.profile.combatAction), "nil") then
 		self.db.profile.combatAction = nil
 	end
-	if strmatch(self.db.profile.movingAction, "nil") then
+	if strmatch(tostring(self.db.profile.movingAction), "nil") then
 		self.db.profile.movingAction = nil
 	end
 
