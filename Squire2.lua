@@ -253,7 +253,7 @@ end
 -- Core logic
 ----------------------------------------------
 
-function ChooseMount(mountType)
+local function ChooseMount(mountType)
 	local mounts = MOUNTS_BY_TYPE[mountType]
 	local oldestTime, oldestId
 	for index, id, active in IterateMounts() do
