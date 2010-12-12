@@ -445,6 +445,9 @@ do
 		local noflying = GetCVarBool('autoDismountFyling') and '' or ',noflying'
 		if canShapeshift and not GetCVarBool('autoUnshift') then
 			tinsert(commands, '/cancelform [form'..noflying..']')
+		-- Moonkin form prevents using any mount, fix it (ticket #22)
+		elseif playerClass == 'DRUID' and GetShapeshiftFormID() == MOONKIN_FORM then
+			tinsert(commands, '/cancelform [form]')
 		end
 		if not GetCVarBool('autoDismount') then
 			tinsert(commands, '/dismount [mounted'..noflying..']')
