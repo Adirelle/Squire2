@@ -95,6 +95,7 @@ function addon:Initialize()
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
+	eventHandler:RegisterEvent('CVAR_UPDATE')
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
 
 	if playerClass == "DRUID" then
@@ -140,6 +141,10 @@ function addon:PLAYER_REGEN_DISABLED()
 	addon:SetupButton("combat")
 end
 
+function addon:CVAR_UPDATE()
+	self:UpdateUnshiftMacro()
+end
+
 do
 	local pending = {}
 
@@ -175,7 +180,7 @@ end
 
 function addon:SetupMacro(create)
 	local index = GetMacroIndexByName(MACRO_NAME)
-	if not self:CanDoSectureStuff("SetupMacro") then return index end
+	if not self:CanDoSecureStuff("SetupMacro") then return index end
 	if index == 0 then
 		if create then
 			return CreateMacro(MACRO_NAME, GetMacroIconIndex(MACRO_ICON), MACRO_BODY, 0)
@@ -308,31 +313,77 @@ end
 local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]"
 local dismountTest = "[mounted][@vehicle,exists]"
 local canShapeshift = (playerClass == "DRUID" or playerClass == "SHAMAN")
+local unshiftMacro
 
 local function SetButtonAction(actionType, actionData, prefix, suffix)
-	if not prefix then prefix = "" end
-	if not suffix then suffix = "" end
 	if actionType and actionData then
+		local button = addon.button
+		if not prefix then prefix = "" end
+		if not suffix then suffix = "" end
 		if actionType == 'spell' then
 			actionData = spellNames[actionData] or actionData
 		elseif actionType == 'item' then
 			actionData = tonumber(actionData) and GetItemInfo(tonumber(actionData)) or actionData
 		end
-		addon.button:SetAttribute(prefix..actionType..suffix, actionData)
+		button:SetAttribute(prefix..actionType..suffix, actionData)
 		if actionType == 'macrotext' then
-			addon.button:SetAttribute(prefix..'macro'..suffix, nil)
+			button:SetAttribute(prefix..'macro'..suffix, nil)
 			actionType = 'macro'
 		end
-		addon.button:SetAttribute(prefix..'type'..suffix, actionType)
+		button:SetAttribute(prefix..'type'..suffix, actionType)
 	else
-		addon.button:SetAttribute(prefix..'type'..suffix, nil)
+		button:SetAttribute(prefix..'type'..suffix, nil)
 	end
 	Debug('SetButtonAction', actionType, actionData, prefix, suffix)
 end
 
+do
+	local t = {}
+	function addon:UpdateUnshiftMacro()
+		wipe(t)
+		local noflying = GetCVarBool('autoDismountFyling') and '' or ',noflying'
+		if canShapeshift and not GetCVarBool('autoUnshift') then
+			tinsert(t, '/cancelform [form'..noflying.."]\n")
+		end
+		if not GetCVarBool('autoDismount') then
+			tinsert(t, '/dismount [mounted'..noflying.."]\n")
+		end
+		if #t > 0 then
+			unshiftMacro = table.concat(t, "")
+		else
+			unshiftMacro = nil
+		end
+	end
+end
+
+local function GetMacroCast(actionType, actionData)
+	if actionData then
+		if actionType == 'spell' then
+			return spellNames[actionData] or actionData
+		elseif actionType == 'item' then
+			return GetItemInfo(actionData) or actionData
+		end
+	end
+end
+
+local function PrependUnshiftMacro(actionType, actionData)
+	if unshiftMacro and actionType and actionData then
+		local spellOrItem = GetMacroCast(actionType, actionData)
+		if spellOrItem then
+			return 'macrotext', unshiftMacro.."/cast "..spellOrItem
+		elseif actionType == 'macrotext' then
+			return 'macrotext',  unshiftMacro..actionData
+		elseif actionType == "macro" then
+			return 'macrotext',  unshiftMacro..GetMacroBody(actionData)
+		end
+	end
+	return actionType, actionData
+end
+
 function addon:UpdateStaticActions()
-	if self:CanDoSectureStuff("UpdateStaticActions") then
+	if self:CanDoSecureStuff("UpdateStaticActions") then
 		SetButtonAction("macrotext", dismountMacro, "", "-dismount")
+		self:UpdateUnshiftMacro()
 	end
 end
 
@@ -410,6 +461,23 @@ if playerClass == 'DRUID' then
 		end
 	end
 
+	-- Workaround for druid moonkin bug
+	local origUpdateUnshiftMacro = addon.UpdateUnshiftMacro
+	function addon:UpdateUnshiftMacro()
+		origUpdateUnshiftMacro(self)
+		if GetCVarBool('autoUnshift') then
+			local moonkinName = knownSpells[24858]
+			if moonkinName then
+				for index = 1, GetNumShapeshiftForms() do
+					if select(2, GetShapeshiftFormInfo(index)) == moonkinName then
+						unshiftMacro = (unshiftMacro or "").."/cancelform [form:"..index.."]\n"
+						return
+					end
+				end
+			end
+		end
+	end
+
 elseif playerClass == 'SHAMAN' then
 
 	addon.mountSpells = { 2645 } -- Ghost Wolf
@@ -454,57 +522,6 @@ local modifierTests = {
 local function TestModifier(name)
 	local test = modifierTests[addon.db.profile[name] or false]
 	return test and test() or false
-end
-
-local function GetMacroCast(actionType, actionData)
-	if not actionData then return end
-	if actionType == 'spell' then
-		return spellNames[actionData] or actionData
-	elseif actionType == 'item' then
-		return GetItemInfo(actionData) or actionData
-	end
-end
-
-local function GetMacroForAction(actionType, actionData)
-	local cast = GetMacroCast(actionType, actionData)
-	if cast then
-		return "/cast "..cast
-	elseif actionType == 'macrotext' then
-		return actionData
-	end
-end
-
-local PrependUnshiftMacro
-do
-	local commands = {}
-	function PrependUnshiftMacro(actionType, actionData)
-		wipe(commands)
-		local noflying = GetCVarBool('autoDismountFyling') and '' or ',noflying'
-		if canShapeshift and not GetCVarBool('autoUnshift') then
-			tinsert(commands, '/cancelform [form'..noflying..']')
-		-- Moonkin form prevents using any mount, fix it (ticket #22)
-		elseif playerClass == 'DRUID' and GetShapeshiftFormID() == MOONKIN_FORM then
-			tinsert(commands, '/cancelform [form]')
-		end
-		if not GetCVarBool('autoDismount') then
-			tinsert(commands, '/dismount [mounted'..noflying..']')
-		end
-		Debug("PrependUnshiftMacro", actionType, actionData, '|', unpack(commands))
-		if #commands == 0 then
-			return actionType, actionData
-		end
-		if actionType and actionData then
-			local macroForAction = GetMacroForAction(actionType, actionData)
-			if macroForAction then
-				tinsert(commands, macroForAction)
-			else
-				-- Sometimes, you can't...
-				return actionType, actionData
-			end
-		end
-		Debug("PrependUnshiftMacro =>", unpack(commands))
-		return 'macrotext', table.concat(commands, "\n")
-	end
 end
 
 local modifierConds = {
@@ -682,6 +699,8 @@ do
 		cprint('IsFlying=', not not IsFlying(), 'IsSwimming=', not not IsSwimming(), 'IsMoving=', GetUnitSpeed("player") > 0)
 		cprint('IsMounted=', not not IsMounted(), 'InVehicle=', not not UnitHasVehicleUI("player"))
 		cprint('dismountTest=', dismountTest, 'result=', not not SecureCmdOptionParse(dismountTest))
+		cprint('dismountMacro=', dismountMacro)
+		cprint('unshiftMacro=', unshiftMacro)
 		cprint('|cffff7700Mounts:|r')
 		for index, id, active in IterateMounts() do
 			if index > 0 then -- Filter out added mounts
