@@ -65,6 +65,8 @@ eventHandler:SetScript('OnEvent', function(_, event, ...) return addon[event](ad
 
 function addon:ADDON_LOADED(_, name)
 	if name ~= addonName then return end
+	eventHandler:UnregisterEvent('ADDON_LOADED')
+
 	self.db = LibStub('AceDB-3.0'):New(addonName.."DB", DEFAULTS, true)
 
 	-- Clean up invalid actions because of buggy AceGUI-3.0-SharedMediaWidgets
@@ -74,6 +76,15 @@ function addon:ADDON_LOADED(_, name)
 	if strmatch(tostring(self.db.profile.movingAction), "nil") then
 		self.db.profile.movingAction = nil
 	end
+
+	eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
+
+	self:Initialize()
+end
+eventHandler:RegisterEvent('ADDON_LOADED')
+
+function addon:Initialize()
+	if not self:CanDoSecureStuff('Initialize') then return end
 
 	local button = CreateFrame("Button", "Squire2Button", nil, "SecureActionButtonTemplate")
 	button:RegisterForClicks("AnyUp")
@@ -98,7 +109,6 @@ function addon:ADDON_LOADED(_, name)
 	self:SetupMacro()
 	self:UpdateStaticActions()
 end
-eventHandler:RegisterEvent('ADDON_LOADED')
 
 local function NOOP() end
 
@@ -130,7 +140,30 @@ function addon:PLAYER_REGEN_DISABLED()
 	addon:SetupButton("combat")
 end
 
+do
+	local pending = {}
+
+	function addon:CanDoSecureStuff(method)
+		if InCombatLockdown() then
+			if not pending[method] then
+				pending[method] = true
+				tinsert(pending, method)
+			end
+			return false
+		end
+		return true
+	end
+
+	function addon:PLAYER_REGEN_ENABLED()
+		for i, method in ipairs(pending) do
+			self[method](self)
+		end
+		wipe(pending)
+	end
+end
+
 local MACRO_NAME, MACRO_ICON, MACRO_BODY = "Squire2", [[Interface\Icons\Ability_Mount_RidingHorse]], "/click [button:2] Squire2Button RightButton; Squire2Button"
+
 local function GetMacroIconIndex(texture)
 	for index = 1, GetNumMacroIcons() do
 		if GetMacroIconInfo(index) == texture then
@@ -139,8 +172,10 @@ local function GetMacroIconIndex(texture)
 	end
 	return 1
 end
+
 function addon:SetupMacro(create)
 	local index = GetMacroIndexByName(MACRO_NAME)
+	if not self:CanDoSectureStuff("SetupMacro") then return index end
 	if index == 0 then
 		if create then
 			return CreateMacro(MACRO_NAME, GetMacroIconIndex(MACRO_ICON), MACRO_BODY, 0)
@@ -218,7 +253,7 @@ function addon:SPELLS_CHANGED(event)
 	if not RUNNING_WILD_NAME and knownSpells[RUNNING_WILD_ID] then
 		RUNNING_WILD_NAME = spellNames[RUNNING_WILD_ID]
 		MOUNTS_BY_TYPE[GROUND][RUNNING_WILD_ID] = true
-		FIRST_ITERATOR_STEP = -1	
+		FIRST_ITERATOR_STEP = -1
 		if not addon.mountSpells then
 			addon.mountSpells = {}
 		end
@@ -296,7 +331,9 @@ local function SetButtonAction(actionType, actionData, prefix, suffix)
 end
 
 function addon:UpdateStaticActions()
-	SetButtonAction("macrotext", dismountMacro, "", "-dismount")
+	if self:CanDoSectureStuff("UpdateStaticActions") then
+		SetButtonAction("macrotext", dismountMacro, "", "-dismount")
+	end
 end
 
 local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
