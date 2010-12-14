@@ -89,6 +89,7 @@ function addon:Initialize()
 	local button = CreateFrame("Button", "Squire2Button", nil, "SecureActionButtonTemplate")
 	button:RegisterForClicks("AnyUp")
 	button:SetScript("PreClick", self.ButtonPreClick)
+	button:SetScript("PostClick", self.ButtonPostClick)
 	self.button = button
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_DISABLED')
@@ -96,6 +97,8 @@ function addon:Initialize()
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
 	eventHandler:RegisterEvent('CVAR_UPDATE')
+	eventHandler:RegisterEvent('UI_ERROR_MESSAGE')
+
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
 
 	if playerClass == "DRUID" then
@@ -131,9 +134,25 @@ function addon:SpellBook_UpdateCompanionsFrame()
 	end
 end
 
+local UIErrorsFrame = UIErrorsFrame
+local catchMessages = false
+
 function addon.ButtonPreClick(_, button)
 	if Squire2Button:CanChangeAttribute() and button ~= "dismount" then
 		addon:SetupButton(button)
+	end
+	UIErrorsFrame:UnregisterEvent('UI_ERROR_MESSAGE')
+	catchMessages = true
+end
+
+function addon.ButtonPostClick()
+	catchMessages = false
+	UIErrorsFrame:RegisterEvent('UI_ERROR_MESSAGE')
+end
+
+function addon:UI_ERROR_MESSAGE(event, message)
+	if catchMessages then
+		Debug(event, message)
 	end
 end
 
