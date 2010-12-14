@@ -573,8 +573,9 @@ do
 					prefix = "/stopmacro [flying]"
 				end
 			end
-			tinsert(t, dismountTest)
 			suffix = dismountMacro
+		elseif unshiftMacro then
+			prefix = unshiftMacro
 		end
 		local waterCast = GetMacroCast(GetActionForMount(WATER, true, true))
 		local outdoorsCast = GetMacroCast(GetActionForMount(GROUND, true, true, true))
