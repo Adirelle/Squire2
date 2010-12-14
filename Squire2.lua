@@ -330,10 +330,10 @@ local canShapeshift = (playerClass == "DRUID" or playerClass == "SHAMAN")
 local unshiftMacro
 
 local function SetButtonAction(actionType, actionData, prefix, suffix)
+	if not prefix then prefix = "" end
+	if not suffix then suffix = "" end
 	if actionType and actionData then
 		local button = addon.button
-		if not prefix then prefix = "" end
-		if not suffix then suffix = "" end
 		if actionType == 'spell' then
 			actionData = spellNames[actionData] or actionData
 		elseif actionType == 'item' then
