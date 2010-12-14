@@ -96,7 +96,6 @@ function addon:Initialize()
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
-	eventHandler:RegisterEvent('CVAR_UPDATE')
 	eventHandler:RegisterEvent('UI_ERROR_MESSAGE')
 
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
@@ -158,10 +157,6 @@ end
 
 function addon:PLAYER_REGEN_DISABLED()
 	addon:SetupButton("combat")
-end
-
-function addon:CVAR_UPDATE()
-	self:UpdateUnshiftMacro()
 end
 
 do
@@ -433,31 +428,12 @@ if playerClass == 'DRUID' then
 	}
 	addon.mountSpells = movingForms
 
-	local baseDismountTest, baseDismountMacro = dismountTest, dismountMacro
-	local t = {}
+	dismountTest = dismountTest.."[form]"
+	dismountMacro =  dismountMacro.."\n/cancelform [form]"
+
 	function addon:UPDATE_SHAPESHIFT_FORMS()
-		-- Select Swift Flight form or Flight form
 		flyingForm = knownSpells[40120] and 40120 or 33943
 		movingForms[3] = flyingForm
-		-- Test existing forms for "mount-like" ones
-		wipe(t)
-		for index = 1, GetNumShapeshiftForms() do
-			Debug('GetShapeshiftFormInfo', index, '=>', GetShapeshiftFormInfo(index))
-			local _, name = GetShapeshiftFormInfo(index)
-			for i, id in pairs(movingForms) do
-				if name == spellNames[id] then
-					tinsert(t, index)
-				end
-			end
-		end
-		if #t > 0 then
-			local test = format("[form:%s]", table.concat(t, "/"))
-			dismountTest = baseDismountTest..test
-			dismountMacro =  baseDismountMacro.."\n/cancelform "..test
-		else
-			dismountTest, dismountMacro = baseDismountTest, baseDismountMacro
-		end
-		Debug('UPDATE_SHAPESHIFT_FORMS', dismountTest, dismountMacro)
 		self:UpdateStaticActions()
 	end
 
