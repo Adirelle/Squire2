@@ -114,8 +114,7 @@ function addon:Initialize()
 	button:SetScript("PreClick", self.ButtonPreClick)
 	button:SetScript("PostClick", self.ButtonPostClick)
 	self.button = button
-	
-	self:SetButtonAction("macrotext", "", "/dismount [mounted]\n/leavevehicle [@vehicle,exists]\n/cancelform [form]", "-dismount")
+
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_DISABLED')
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
@@ -424,6 +423,16 @@ function addon:UpdateMacroTemplate()
 	noopConditions = (#noopConds > 0) and tconcat(noopConds, "") or ""
 	Debug("UpdateMacroTemplate: noopConditions=", noopConditions)
 	Debug("UpdateMacroTemplate: template=\n"..macroTemplate)
+	self:UpdateDismountAction()
+end
+
+function addon:UpdateDismountAction()
+	if not self:CanDoSecureStuff('UpdateDismountAction') then return end
+	local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]"
+	if self.canShapeshift then 
+		dismountMacro = dismountMacro .. "\n/cancelform [form]"
+	end
+	self:SetButtonAction(self.button, 'macrotext', dismountMacro, "-dismount")
 end
 
 ----------------------------------------------
