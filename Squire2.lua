@@ -77,11 +77,25 @@ function addon:ADDON_LOADED(_, name)
 	self.db = LibStub('AceDB-3.0'):New(addonName.."DB", DEFAULTS, true)
 
 	-- Clean up invalid actions because of buggy AceGUI-3.0-SharedMediaWidgets
-	if strmatch(tostring(self.db.profile.combatAction), "nil") then
-		self.db.profile.combatAction = nil
+	if strmatch(tostring(self.db.char.combatAction), "nil") then
+		self.db.char.combatAction = nil
 	end
-	if strmatch(tostring(self.db.profile.movingAction), "nil") then
-		self.db.profile.movingAction = nil
+	if strmatch(tostring(self.db.char.movingAction), "nil") then
+		self.db.char.movingAction = nil
+	end
+
+	local profile = self.db.profile
+
+	-- Upgrade from previous database version
+	if profile.autoDismount then
+		profile.autoDismount = nil
+		profile.ifMounted = ACTION_TOGGLE
+		profile.ifShapeshifted = ACTION_TOGGLE
+		profile.ifInVehicle = ACTION_TOGGLE
+	end
+	if profile.safeDismount then
+		profile.safeDismount = nil
+		profile.secureFlight = true
 	end
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
