@@ -46,14 +46,21 @@ local RUNNING_WILD_NAME
 -- 0 to only list "normal" mounts, -1 to include Running Wild
 local FIRST_ITERATOR_STEP = 0
 
+local tconcat = table.concat
+
+local ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE = 1, 2, 3
+addon.ACTION_NOOP, addon.ACTION_SMOOTH, addon.ACTION_TOGGLE = ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE
+
 --------------------------------------------------------------------------------
 -- Initializing
 --------------------------------------------------------------------------------
 
 local DEFAULTS = {
 	profile = {
-		autoDismount = true,
-		safeDismount = true,
+		ifMounted = ACTION_SMOOTH,
+		ifShapeshifted = ACTION_SMOOTH,
+		ifInVehicle = ACTION_TOGGLE,
+		secureFlight = true,
 		groundModifier = "any",
 		dismountModifier = "none",
 	},
@@ -86,22 +93,28 @@ eventHandler:RegisterEvent('ADDON_LOADED')
 function addon:Initialize()
 	if not self:CanDoSecureStuff('Initialize') then return end
 
+	self.canShapeshift = false
+
 	local button = CreateFrame("Button", "Squire2Button", nil, "SecureActionButtonTemplate")
 	button:RegisterForClicks("AnyUp")
 	button:SetScript("PreClick", self.ButtonPreClick)
 	button:SetScript("PostClick", self.ButtonPostClick)
 	self.button = button
+	
+	self:SetButtonAction("macrotext", "", "/dismount [mounted]\n/leavevehicle [@vehicle,exists]\n/cancelform [form]", "-dismount")
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_DISABLED')
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
-	eventHandler:RegisterEvent('UI_ERROR_MESSAGE')
 
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
 
-	if playerClass == "DRUID" then
-		hooksecurefunc(self, "SPELLS_CHANGED", self.UPDATE_SHAPESHIFT_FORMS)
+	-- Hook UIErrorsFrame_OnEvent to eat errors
+	self.orig_UIErrorsFrame_OnEvent = UIErrorsFrame_OnEvent
+	UIErrorsFrame_OnEvent = self.UIErrorsFrame_OnEvent
+
+	if playerClass == "DRUID" or playerClass == "SHAMAN" then
 		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
 	end
 
@@ -110,27 +123,6 @@ function addon:Initialize()
 	end
 
 	self:SetupMacro()
-	self:UpdateStaticActions()
-end
-
-local function NOOP() end
-
-function addon:LoadConfig()
-	self.LoadConfig, self.OpenConfig, self.SpellBook_UpdateCompanionsFrame = NOOP, NOOP, NOOP
-	local success, msg = LoadAddOn('Squire2_Config')
-	assert(success, "Could not load Squire2 configuration module: "..(msg and _G["ADDON_"..msg] or "unknown reason"))
-end
-
-function addon:OpenConfig()
-	self:LoadConfig()
-	return self:OpenConfig()
-end
-
-function addon:SpellBook_UpdateCompanionsFrame()
-	if SpellBookCompanionsFrame.mode == 'MOUNT' then
-		self:LoadConfig()
-		return self:SpellBook_UpdateCompanionsFrame()
-	end
 end
 
 local UIErrorsFrame = UIErrorsFrame
@@ -138,25 +130,25 @@ local catchMessages = false
 
 function addon.ButtonPreClick(_, button)
 	if Squire2Button:CanChangeAttribute() and button ~= "dismount" then
-		addon:SetupButton(button)
+		addon:UpdateAction(button)
 	end
-	UIErrorsFrame:UnregisterEvent('UI_ERROR_MESSAGE')
 	catchMessages = true
 end
 
 function addon.ButtonPostClick()
 	catchMessages = false
-	UIErrorsFrame:RegisterEvent('UI_ERROR_MESSAGE')
 end
 
-function addon:UI_ERROR_MESSAGE(event, message)
-	if catchMessages then
-		Debug(event, message)
+function addon.UIErrorsFrame_OnEvent(frame, event, ...)
+	if catchMessages and event == 'UI_ERROR_MESSAGE' then
+		return Debug(event, ...)
+	else
+		return addon.orig_UIErrorsFrame_OnEvent(frame, event, ...)
 	end
 end
 
 function addon:PLAYER_REGEN_DISABLED()
-	addon:SetupButton("combat")
+	addon:UpdateAction("combat")
 end
 
 do
@@ -180,6 +172,38 @@ do
 		wipe(pending)
 	end
 end
+
+----------------------------------------------
+-- Config handling
+----------------------------------------------
+
+local function NOOP() end
+
+function addon:LoadConfig()
+	self.LoadConfig, self.OpenConfig, self.SpellBook_UpdateCompanionsFrame = NOOP, NOOP, NOOP
+	local success, msg = LoadAddOn('Squire2_Config')
+	assert(success, "Could not load Squire2 configuration module: "..(msg and _G["ADDON_"..msg] or "unknown reason"))
+end
+
+function addon:OpenConfig()
+	self:LoadConfig()
+	return self:OpenConfig()
+end
+
+function addon:SpellBook_UpdateCompanionsFrame()
+	if SpellBookCompanionsFrame.mode == 'MOUNT' then
+		self:LoadConfig()
+		return self:SpellBook_UpdateCompanionsFrame()
+	end
+end
+
+function addon:ConfigChanged()
+	self:UpdateMacroTemplate()
+end
+
+----------------------------------------------
+-- Squire2 visible macro
+----------------------------------------------
 
 local MACRO_NAME, MACRO_ICON, MACRO_BODY = "Squire2", [[Interface\Icons\Ability_Mount_RidingHorse]], "/click [button:2] Squire2Button RightButton; Squire2Button"
 
@@ -278,6 +302,19 @@ function addon:SPELLS_CHANGED(event)
 		end
 		tinsert(addon.mountSpells, RUNNING_WILD_ID)
 	end
+	
+	self:UPDATE_SHAPESHIFT_FORMS(event)
+end
+
+function addon:UPDATE_SHAPESHIFT_FORMS(event)
+	local canShapeshift = (playerClass == "DRUID" or playerClass == "SHAMAN") and GetNumShapeshiftForms() > 0
+	if canShapeshift and self.Post_UPDATE_SHAPESHIFT_FORMS then
+		self:Post_UPDATE_SHAPESHIFT_FORMS(event)
+	end
+	if canShapeshift ~= self.canShapeshift then
+		self.canShapeshift = canShapeshift
+		self:UpdateMacroTemplate()
+	end
 end
 
 function addon:PLAYER_ENTERING_WORLD(event)
@@ -292,10 +329,8 @@ local mountHistory = {}
 
 function addon:COMPANION_UPDATE(event, type)
 	if type == 'MOUNT' then
-		Debug(event, type)
 		for index, id, active in IterateMounts() do
 			if active then
-				Debug('Action mount:', id)
 				mountHistory[id] = time()
 				return
 			end
@@ -303,11 +338,7 @@ function addon:COMPANION_UPDATE(event, type)
 	end
 end
 
-----------------------------------------------
--- Core logic
-----------------------------------------------
-
-local function ChooseMount(mountType)
+function addon:ChooseMount(mountType)
 	local mounts = MOUNTS_BY_TYPE[mountType]
 	local oldestTime, oldestId
 	for index, id, active in IterateMounts() do
@@ -324,12 +355,68 @@ local function ChooseMount(mountType)
 	return oldestId
 end
 
-local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]"
-local dismountTest = "[mounted][@vehicle,exists]"
-local canShapeshift = (playerClass == "DRUID" or playerClass == "SHAMAN")
-local unshiftMacro
+----------------------------------------------
+-- Internal macro template
+----------------------------------------------
 
-local function SetButtonAction(actionType, actionData, prefix, suffix)
+local macroTemplate
+local noopConditions
+
+local modifierConds = {
+	any = "modifier",
+	control = "modifier:ctrl",
+	alt = "modifier:alt",
+	shift = "modifier:shift",
+	rightbutton = "button:2",
+}
+
+local cmds, noopConds, stopConds = {}, {}, {}
+
+local function AddCancelCommand(setting, command, condition, forceDismountCondition)
+	if setting == ACTION_SMOOTH then
+		-- Smooth transition, cancel before trying to do something else
+		tinsert(cmds, 1, command.." ["..condition.."]")
+	else
+		-- (Overridable) No-op or toggle, include cancelling command
+		tinsert(cmds, command.." ["..condition.."]")
+		tinsert(noopConds, "["..condition.."]")
+		if setting == ACTION_NOOP then
+			-- No-op add stop condition
+			tinsert(stopConds, "["..condition..forceDismountCondition.."]")
+		end
+	end
+end
+
+function addon:UpdateMacroTemplate()
+	local pref = addon.db.profile
+	local dismountModifier = pref.dismountModifier and modifierConds[pref.dismountModifier]
+	local forceDismountCondition = dismountModifier and (",no"..dismountModifier) or ""
+	wipe(cmds)
+	wipe(noopConds)
+	wipe(stopConds)
+	if pref.secureFlight then
+		tinsert(stopConds, "[flying"..forceDismountCondition.."]")
+	end
+	tinsert(cmds, "%ACTION%")
+	if self.canShapeshift then
+		AddCancelCommand(pref.ifShapeshifted, "/cancelform", "form", forceDismountCondition)
+	end
+	AddCancelCommand(pref.ifMounted, "/dismount", "mounted", forceDismountCondition)
+	AddCancelCommand(pref.ifInVehicle, "/leavevehicle", "@vehicle,exists", forceDismountCondition)
+	if #stopConds > 0 then
+		tinsert(cmds, 1, "/stopmacro "..tconcat(stopConds, ""))
+	end
+	macroTemplate = tconcat(cmds, "\n")
+	noopConditions = (#noopConds > 0) and tconcat(noopConds, "") or ""
+	Debug("UpdateMacroTemplate: noopConditions=", noopConditions)
+	Debug("UpdateMacroTemplate: template=\n"..macroTemplate)
+end
+
+----------------------------------------------
+-- Core logic
+----------------------------------------------
+
+function addon:SetButtonAction(actionType, actionData, prefix, suffix)
 	if not prefix then prefix = "" end
 	if not suffix then suffix = "" end
 	if actionType and actionData then
@@ -351,70 +438,23 @@ local function SetButtonAction(actionType, actionData, prefix, suffix)
 	Debug('SetButtonAction', actionType, actionData, prefix, suffix)
 end
 
-do
-	local t = {}
-	function addon:UpdateUnshiftMacro()
-		wipe(t)
-		local noflying = GetCVarBool('autoDismountFyling') and '' or ',noflying'
-		if canShapeshift and not GetCVarBool('autoUnshift') then
-			tinsert(t, '/cancelform [form'..noflying.."]\n")
-		end
-		if not GetCVarBool('autoDismount') then
-			tinsert(t, '/dismount [mounted'..noflying.."]\n")
-		end
-		if #t > 0 then
-			unshiftMacro = table.concat(t, "")
-		else
-			unshiftMacro = nil
-		end
-	end
-end
-
-local function GetMacroCast(actionType, actionData)
-	if actionData then
-		if actionType == 'spell' then
-			return spellNames[actionData] or actionData
-		elseif actionType == 'item' then
-			return GetItemInfo(actionData) or actionData
-		end
-	end
-end
-
-local function PrependUnshiftMacro(actionType, actionData)
-	if unshiftMacro and actionType and actionData then
-		local spellOrItem = GetMacroCast(actionType, actionData)
-		if spellOrItem then
-			return 'macrotext', unshiftMacro.."/cast "..spellOrItem
-		elseif actionType == 'macrotext' then
-			return 'macrotext',  unshiftMacro..actionData
-		elseif actionType == "macro" then
-			return 'macrotext',  unshiftMacro..GetMacroBody(actionData)
-		end
-	end
-	return actionType, actionData
-end
-
-function addon:UpdateStaticActions()
-	if self:CanDoSecureStuff("UpdateStaticActions") then
-		SetButtonAction("macrotext", dismountMacro, "", "-dismount")
-		self:UpdateUnshiftMacro()
-	end
-end
-
-local function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+function addon:GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
 	if not isMoving and not inCombat then
-		local id = ChooseMount(mountType)
+		local id = self:ChooseMount(mountType)
 		if id then
 			Debug('GetActionForMount => spell', spellNames[id] or id)
 			return 'spell', id
 		end
 	end
-	if mountType ~= AIR and isMoving and addon.db.char.movingAction then
+	if isMoving and addon.db.char.movingAction and (mountType ~= AIR or not IsFalling()) then
+		Debug('GetActionForMount (moving) =>', addon.db.char.movingAction)
 		local actionType, actionData = strsplit(':', addon.db.char.movingAction)
 		if actionType and actionData then
-			Debug('GetActionForMount (moving) =>', actionType, actionData)
 			return actionType, actionData
 		end
+	end
+	if self.GetAlternateActionForMount then
+		return self:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
 	end
 end
 
@@ -428,21 +468,12 @@ if playerClass == 'DRUID' then
 	}
 	addon.mountSpells = movingForms
 
-	dismountTest = dismountTest.."[form]"
-	dismountMacro =  dismountMacro.."\n/cancelform [form]"
-
-	function addon:UPDATE_SHAPESHIFT_FORMS()
+	function addon:Post_UPDATE_SHAPESHIFT_FORMS()
 		flyingForm = knownSpells[40120] and 40120 or 33943
 		movingForms[3] = flyingForm
-		self:UpdateStaticActions()
 	end
 
-	local origGetActionForMount = GetActionForMount
-	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if actionType and actionData then
-			return actionType, actionData
-		end
+	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if mountType == AIR then
 			return 'spell', addon.db.char.mounts[flyingForm] and IsUsableSpell(flyingForm) and knownSpells[flyingForm] -- Any flying form
 		elseif mountType == WATER then
@@ -456,36 +487,11 @@ if playerClass == 'DRUID' then
 		end
 	end
 
-	-- Workaround for druid moonkin bug
-	local origUpdateUnshiftMacro = addon.UpdateUnshiftMacro
-	function addon:UpdateUnshiftMacro()
-		origUpdateUnshiftMacro(self)
-		if GetCVarBool('autoUnshift') then
-			local moonkinName = knownSpells[24858]
-			if moonkinName then
-				for index = 1, GetNumShapeshiftForms() do
-					if select(2, GetShapeshiftFormInfo(index)) == moonkinName then
-						unshiftMacro = (unshiftMacro or "").."/cancelform [form:"..index.."]\n"
-						return
-					end
-				end
-			end
-		end
-	end
-
 elseif playerClass == 'SHAMAN' then
 
 	addon.mountSpells = { 2645 } -- Ghost Wolf
-
-	dismountTest = dismountTest .. "[form]"
-	dismountMacro = dismountMacro .. "\n/cancelform [form]"
-
-	local origGetActionForMount = GetActionForMount
-	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if actionType and actionData then
-			return actionType, actionData
-		elseif mountType == GROUND and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
+	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if mountType == GROUND and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
 			return 'spell', addon.db.char.mounts[2645] and knownSpells[2645] -- Ghost Wolf
 		end
 	end
@@ -493,186 +499,171 @@ elseif playerClass == 'SHAMAN' then
 elseif playerClass == 'HUNTER' then
 
 	addon.mountSpells = { 5118 } -- Aspect of the Cheetah
-
-	local origGetActionForMount = GetActionForMount
-	function GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		local actionType, actionData = origGetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if actionType and actionData then
-			return actionType, actionData
-		elseif mountType == GROUND and addon.db.char.mounts[5118] then
+	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if mountType == GROUND and addon.db.char.mounts[5118] then
 			return 'spell', addon.db.char.mounts[5118] and knownSpells[5118] -- Aspect of the Cheetah
 		end
 	end
 
 end
 
-local modifierTests = {
-	any = IsModifierKeyDown,
-	control = IsControlKeyDown,
-	alt = IsAltKeyDown,
-	shift = IsShiftKeyDown,
-	rightbutton = function() return GetMouseButtonClicked() == "RightButton" end,
-}
-
-local function TestModifier(name)
-	local test = modifierTests[addon.db.profile[name] or false]
-	return test and test() or false
-end
-
-local modifierConds = {
-	any = "modifier",
-	control = "modifier:ctrl",
-	alt = "modifier:alt",
-	shift = "modifier:shift",
-	rightbutton = "button:2",
-}
-
-local GetCombatAction
-do
-	local t = {}
-	function GetCombatAction()
-		if addon.db.char.combatAction then
-			local actionType, actionData = strsplit(':', addon.db.char.combatAction)
-			if actionType and actionData then
-				Debug('GetCombatAction (custom)', actionType, actionData)
-				return actionType, actionData
-			end
-		end
-		local prefix, suffix = "", ""
-		wipe(t)
-		if addon.db.profile.autoDismount then
-			if addon.db.profile.safeDismount then
-				local modifier = modifierConds[addon.db.profile.dismountModifier or false]
-				if modifier then
-					prefix = "/stopmacro [flying,no"..modifier.."]"
-				else
-					prefix = "/stopmacro [flying]"
-				end
-			end
-			suffix = dismountMacro
-		elseif unshiftMacro then
-			prefix = unshiftMacro
-		end
-		local waterCast = GetMacroCast(GetActionForMount(WATER, true, true))
-		local outdoorsCast = GetMacroCast(GetActionForMount(GROUND, true, true, true))
-		local indoorsCast = GetMacroCast(GetActionForMount(GROUND, true, true, false))
-		if waterCast and waterCast ~= indoorsCast then
-			tinsert(t, "[swimming]"..waterCast)
-		end
-		if outdoorsCast and outdoorsCast ~= indoorsCast then
-			tinsert(t, "[outdoors]"..outdoorsCast)
-		end
-		if indoorsCast then
-			tinsert(t, indoorsCast)
-		end
-		Debug('GetCombatAction', unpack(t))
-		if #t > 0 then
-			return 'macrotext', strjoin("\n", prefix, "/cast "..table.concat(t, ";"), suffix)
-		end
-	end
-end
-
-local function ExploreActions(groundOnly, isMoving, isOutdoors, primary, secondary, tertiary)
-	Debug('ExploreActions', groundOnly, isMoving, isOutdoors, primary, secondary, tertiary)
+function addon:ExploreActions(groundOnly, isMoving, isOutdoors, primary, secondary, tertiary)
+	Debug('ExploreActions', "groundOnly=", groundOnly, "moving=", isMoving, "outdoors=", isOutdoors, "mounts=[", primary, secondary, tertiary, "]")
 	if primary == AIR and groundOnly then
 		if secondary then
 			Debug('ExploreActions, skiping AIR type with groundOnly')
-			return ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
+			return self:ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
 		else
 			return
 		end
 	end
-	local actionType, actionData = GetActionForMount(primary, isMoving, false, isOutdoors)
+	local actionType, actionData = self:GetActionForMount(primary, isMoving, false, isOutdoors)
 	if actionType and actionData then
 		return actionType, actionData
 	end
 	if secondary then
 		Debug('ExploreActions, trying secondary')
-		actionType, actionData = ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
+		actionType, actionData = self:ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
 		if actionType and actionData then
 			return actionType, actionData
 		end
 	end
 	if not isMoving then
 		Debug('ExploreActions, trying with moving')
-		actionType, actionData = ExploreActions(groundOnly, true, isOutdoors, primary, secondary, tertiary)
+		actionType, actionData = self:ExploreActions(groundOnly, true, isOutdoors, primary, secondary, tertiary)
 		if actionType and actionData then
 			return actionType, actionData
 		end
 	end
 	if not isOutdoors then
 		Debug('ExploreActions, trying outdoors')
-		return ExploreActions(groundOnly, isMoving, true, primary, secondary, tertiary)
+		return self:ExploreActions(groundOnly, isMoving, true, primary, secondary, tertiary)
 	end
 end
 
-local commands = {}
-local function ResolveAction(button)
-	-- In-combat action
-	if button == "combat" then
-		return GetCombatAction()
-	end
-	-- Handle dismounting
-	local canDismount = SecureCmdOptionParse(dismountTest)
-	Debug('canDismount:', not not canDismount)
-	if canDismount then
-		if TestModifier("dismountModifier") or (addon.db.profile.autoDismount and not (addon.db.profile.safeDismount and IsFlying())) then
-			return "macrotext", dismountMacro
-		elseif addon.db.profile.autoDismount and addon.db.profile.safeDismount and IsFlying() then
-			return
-		end
-	end
-	-- Try to get a mount or a spell
-	local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
-	local groundOnly = TestModifier("groundModifier")
-	local actionType, actionData = ExploreActions(groundOnly, GetUnitSpeed("player") > 0, IsOutdoors(), primary or GROUND, secondary, tertiary)
-	return PrependUnshiftMacro(actionType, actionData)
-end
-
-function addon:SetupButton(button)
-	Debug('SetupButton', button)
-	SetButtonAction(ResolveAction(button))
-end
-
--- Debug code
-SLASH_TESTSQUIRE1 = "/sq2test"
-
-do
-	local function tocoloredstring(value)
-		if type(value) == "string" then
-			return value
-		elseif value == nil then
-			return "|cff777777nil|r"
-		elseif type(value) == "bool" then
-			return format("|cff0077ff%s|r", tostring(value))
-		elseif type(value) == "number" then
-			return format("|cff7777ff%s|r", tostring(value))
-		elseif type(value) == "table" and type(value.GetName) == "function" then
-			return format("|cffff7700[%s]|r", tostring(value:GetName()))
+local function GetMacroCommand(actionType, actionData)
+	if actionType and actionData then
+		local id = strjoin(":", tostringall(actionType, actionData))
+		if actionType == 'spell' then
+			return "/cast", spellNames[actionData] or actionData, id
+		elseif actionType == 'item' then
+			return "/use", GetItemInfo(actionData) or actionData, id
 		else
-			return format("|cff00ff77%s|r", tostring(value))
+			Debug("Can't handle action:", actionType, actionData)
+			--return "/run", "print("..format("%q", "Can't handle %s:%s right now", actionType, actionData)..")")
 		end
 	end
+end
 
-	local function tocoloredstringall(...)
-		if select('#', ...) > 0 then
-			return tocoloredstring(...), tocoloredstringall(select(2, ...))
+local cmds = {}
+
+local function AddActionCommand(cmd, arg, noopConds)
+	if cmd and arg then
+		if noopConds ~= "" then
+			tinsert(cmds, cmd.." "..noopConds..";"..arg)
+		else
+			tinsert(cmds, cmd.." "..arg)
 		end
 	end
+end
 
-	local function cprint(...)
-		local str = strjoin(" ", tocoloredstringall(...)):gsub("= ", "=")
-		return print(str)
+function addon:BuildAction(clickedButton)
+	wipe(cmds)	
+	local noopConds = noopConditions
+	local actionType, actionData
+	local isMoving = GetUnitSpeed("player") > 0 or IsFalling()
+	
+	-- First, determine the main action
+	if clickedButton == "combat" then
+		if addon.db.char.combatAction then
+			actionType, actionData = strsplit(':', addon.db.char.combatAction)
+		else
+			actionType, actionData = self:GetActionForMount(GROUND, true, true, false)
+		end
+	else
+		local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
+		actionType, actionData = self:ExploreActions(groundOnly, isMoving, IsOutdoors(), primary or GROUND, secondary, tertiary)	
 	end
-
-	local function DumpSettings(t, key, value)
-		if key then
-			return tostring(key).."=", value, DumpSettings(t, next(t, key))
+	local mainCmd, mainArg, mainId = GetMacroCommand(actionType, actionData)
+	
+	-- Add action with ground modifier, if applicable
+	local groundModifier = addon.db.profile.groundModifier and modifierConds[addon.db.profile.groundModifier]
+	if groundModifier then
+		local groundCmd, groundArg, groundId = GetMacroCommand(self:GetActionForMount(GROUND, isMoving, clickedButton == "combat", true))
+		if groundId ~= mainId then
+			AddActionCommand(groundCmd, "["..groundModifier.."]"..groundArg, noopConds)
+			noopConds = noopConds.."["..groundModifier.."]"
 		end
 	end
+	
+	-- Add modified combat actions
+	if clickedButton == "combat" and not addon.db.char.combatAction then
+		local waterCmd, waterArg, waterId = GetMacroCommand(self:GetActionForMount(WATER, true, true, false))
+		local outdoorsCmd, outdoorsArg, outdoorsId = GetMacroCommand(self:GetActionForMount(GROUND, true, true, true))
+		if waterId ~= mainId then
+			AddActionCommand(waterCmd, "[swimming]"..waterArg, noopConds)
+			noopConds = noopConds.."[swimming]"
+		end
+		if outdoorsId ~= mainId then
+			AddActionCommand(outdoorsCmd, "[outdoors]"..outdoorsArg, noopConds)
+			noopConds = noopConds.."[outdoors]"
+		end
+	end
+	
+	-- Finally add the main action
+	AddActionCommand(mainCmd, mainArg, noopConds)
+	
+	-- Join all
+	return #cmds > 0 and tconcat(cmds, "\n") or ""
+end
 
-	function SlashCmdList.TESTSQUIRE()
-		cprint('|cffff7700=== Squire2 test ===|r')
+function addon:UpdateAction(clickedButton)
+	local action = self:BuildAction(clickedButton) or ""
+	local macro = gsub(macroTemplate, "%%ACTION%%", action)
+	self:SetButtonAction("macrotext", macro, "", "")
+end
+
+--@alpha@
+-- Debug commands
+
+local function tocoloredstring(value)
+	if type(value) == "string" then
+		return value
+	elseif value == nil then
+		return "|cff777777nil|r"
+	elseif type(value) == "bool" then
+		return format("|cff0077ff%s|r", tostring(value))
+	elseif type(value) == "number" then
+		return format("|cff7777ff%s|r", tostring(value))
+	elseif type(value) == "table" and type(value.GetName) == "function" then
+		return format("|cffff7700[%s]|r", tostring(value:GetName()))
+	else
+		return format("|cff00ff77%s|r", tostring(value))
+	end
+end
+
+local function tocoloredstringall(...)
+	if select('#', ...) > 0 then
+		return tocoloredstring(...), tocoloredstringall(select(2, ...))
+	end
+end
+
+local function cprint(...)
+	local str = strjoin(" ", tocoloredstringall(...)):gsub("= ", "=")
+	return print(str)
+end
+
+local function DumpSettings(t, key, value)
+	if key then
+		return tostring(key).."=", value, DumpSettings(t, next(t, key))
+	end
+end
+
+SLASH_TESTSQUIRE1 = "/sq2test"
+function SlashCmdList.TESTSQUIRE(cmd)
+	cmd = strlower(strtrim(tostring(cmd)))
+	cprint('|cffff7700=== Squire2 '..cmd..' ===|r')
+	if cmd == "all" or cmd == "" then
 		cprint("Locale:", GetLocale(), "BuildInfo:", GetBuildInfo())
 		local ehName, ehEnabled = "unknown", "unknown"
 		if BugGrabber then
@@ -694,10 +685,30 @@ do
 		cprint('GetMapInfo=', GetMapInfo(), 'IsFlyableArea=', not not IsFlyableArea())
 		cprint('IsFlying=', not not IsFlying(), 'IsSwimming=', not not IsSwimming(), 'IsMoving=', GetUnitSpeed("player") > 0)
 		cprint('IsMounted=', not not IsMounted(), 'InVehicle=', not not UnitHasVehicleUI("player"))
-		cprint('dismountTest=', dismountTest, 'result=', not not SecureCmdOptionParse(dismountTest))
-		cprint('dismountMacro=', dismountMacro)
-		cprint('unshiftMacro=', unshiftMacro)
-		cprint('|cffff7700Mounts:|r')
+	end
+	if cmd == "tests" or cmd == "all" then
+		local isOutdoors = IsOutdoors()
+		cprint('|cffff7700Mount/spell selection:|r')
+		-- groundOnly, isMoving, isOutdoors, primary, secondary, tertiary
+		cprint('- GROUND, stationary =>', addon:ExploreActions(false, false, isOutdoors, GROUND))
+		cprint('- GROUND, moving =>', addon:ExploreActions(false, true, isOutdoors, GROUND))
+		cprint('- AIR, stationary =>',  addon:ExploreActions(false, false, isOutdoors, AIR))
+		cprint('- AIR, moving =>',  addon:ExploreActions(false, true, isOutdoors, AIR))
+		cprint('- AIR, stationary, ground modifier =>',  addon:ExploreActions(true, false, isOutdoors, AIR))
+		cprint('- AIR, moving, ground modifier =>',  addon:ExploreActions(true, true, isOutdoors, AIR))
+		cprint('- WATER, stationary =>', addon:ExploreActions(false, false, isOutdoors, WATER))
+		cprint('- WATER, moving =>', addon:ExploreActions(false, true, isOutdoors, WATER))
+		cprint('- WATER, stationary, ground modifier =>', addon:ExploreActions(true, false, isOutdoors, WATER))
+		cprint('- WATER, moving, ground modifier =>', addon:ExploreActions(true, true, isOutdoors, WATER))
+	end
+	if cmd == "macros" or cmd == "all" then
+		cprint('|cffff7700Macro building:|r')
+		cprint('- internal macro template:\n', macroTemplate)
+		cprint('- combat action:\n', addon:BuildAction("combat"))
+		cprint('- out of combat action:\n', addon:BuildAction("LeftButton"))
+	end
+	if cmd == "mounts" or cmd == "all" then
+		cprint('|cffff7700Character mounts:|r')
 		for index, id, active in IterateMounts() do
 			if index > 0 then -- Filter out added mounts
 				local ground, air, water = LibMounts:GetMountInfo(id)
@@ -705,27 +716,11 @@ do
 			end
 		end
 		if addon.mountSpells then
-			cprint('|cffff7700Spells:|r')
+			cprint('|cffff7700Character spells:|r')
 			for i, id in ipairs(addon.mountSpells) do
 				cprint('  ', GetSpellLink(id), 'known=', not not knownSpells[id], 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id))
 			end
 		end
-		local isOutdoors = IsOutdoors()
-		cprint('|cffff7700Tests:|r')
-		-- groundOnly, isMoving, isOutdoors, primary, secondary, tertiary
-		cprint('- GROUND, stationary =>', ExploreActions(false, false, isOutdoors, GROUND))
-		cprint('- GROUND, moving =>', ExploreActions(false, true, isOutdoors, GROUND))
-		cprint('- AIR, stationary =>',  ExploreActions(false, false, isOutdoors, AIR))
-		cprint('- AIR, moving =>',  ExploreActions(false, true, isOutdoors, AIR))
-		cprint('- AIR, stationary, ground modifier =>',  ExploreActions(true, false, isOutdoors, AIR))
-		cprint('- AIR, moving, ground modifier =>',  ExploreActions(true, true, isOutdoors, AIR))
-		cprint('- WATER, stationary =>', ExploreActions(false, false, isOutdoors, WATER))
-		cprint('- WATER, moving =>', ExploreActions(false, true, isOutdoors, WATER))
-		cprint('- WATER, stationary, ground modifier =>', ExploreActions(true, false, isOutdoors, WATER))
-		cprint('- WATER, moving, ground modifier =>', ExploreActions(true, true, isOutdoors, WATER))
-		cprint('- in-combat action:', ResolveAction("combat"))
-		cprint('- out-of-combat action:', ResolveAction("LeftButton"))
-		cprint('- actual action:', ResolveAction(InCombatLockdown() and "combat" or "LeftButton"))
 	end
 end
-
+--@end-alpha@

@@ -6,8 +6,10 @@ All rights reserved.
 
 local addon = Squire2
 local L, Debug = addon.L, addon.Debug
+local ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE = addon.ACTION_NOOP, addon.ACTION_SMOOTH, addon.ACTION_TOGGLE
 
 local AceConfigDialog = LibStub('AceConfigDialog-3.0')
+
 
 local checkbuttons = {}
 local spellbuttons = {}
@@ -232,6 +234,28 @@ local function BindingGet(info)
 end
 
 --------------------------------------------------------------------------------
+-- Action handling
+--------------------------------------------------------------------------------
+
+local function GetAction(info)
+	return addon.db.char[info[#info]]
+end
+
+local function SetAction(info, value)
+	if not value or strtrim(value) == "" or strmatch(value, "nil") then
+		value = nil
+	end
+	if value ~= addon.db.char[info[#info]] then
+		addon.db.char[info[#info]] = value
+		addon:ConfigChanged()
+	end
+end
+
+local function ValidateAction(info, value)
+	return (value ~= "macro:Squire2") or L["Infinite recursion is bad !"]
+end
+
+--------------------------------------------------------------------------------
 -- Handlers of the panel button
 --------------------------------------------------------------------------------
 
@@ -255,7 +279,7 @@ local modifierList = {
 	shift = SHIFT_KEY,
 	rightbutton = L["Right mouse button"],
 }
-
+		
 local options
 function addon.GetOptions()
 	if not options then
@@ -263,6 +287,8 @@ function addon.GetOptions()
 			name = format("Squire2 %s", GetAddOnMetadata("Squire2", "Version")),
 			type = "group",
 			disabled = function() return InCombatLockdown() end,
+			set = function(info, value) addon.db.profile[info[#info]] = value addon:ConfigChanged() end,
+			get = function(info) return addon.db.profile[info[#info]] end,
 			args = {
 				macro = {
 					name = L['Macro'],
@@ -304,8 +330,6 @@ function addon.GetOptions()
 					name = L['Ground modifier'],
 					desc = L['Select a modifier to enforce the use of a ground mount.'],
 					type = 'select',
-					get = function() return addon.db.profile.groundModifier end,
-					set = function(_, value) addon.db.profile.groundModifier = value end,
 					values = modifierList,
 					order = 35,
 				},
@@ -313,8 +337,6 @@ function addon.GetOptions()
 					name = L['Dismount modifier'],
 					desc = L['Select a modifier to enforce dismounting, even mid-air.'],
 					type = 'select',
-					get = function() return addon.db.profile.dismountModifier end,
-					set = function(_, value) addon.db.profile.dismountModifier = value end,
 					values = modifierList,
 					order = 37,
 				},
@@ -323,23 +345,47 @@ function addon.GetOptions()
 					type = 'header',
 					order = 40,
 				},
-				autoDismount = {
-					name = L['Dismount/exit vehicle/cancel shapeshift'],
-					desc = L['Check this to dismount, exit vehicle or cancel shapeshift resp. when on a mount, in a vehicle or shapeshifted.'],
-					type = 'toggle',
-					width = 'full',
-					get = function() return addon.db.profile.autoDismount end,
-					set = function(_, value) addon.db.profile.autoDismount = value end,
+				ifMounted = {
+					name = L['When already on a mount...'],
+					type = 'select',
+					style = 'radio',
+					width = 'double',
+					values = {
+						[ACTION_NOOP] = L["... do nothing."],
+						[ACTION_SMOOTH] = L["... dismount and use another mount."],
+						[ACTION_TOGGLE] = L["... dismount."],
+					},
 					order = 45,
 				},
-				safeDismount = {
-					name = L['... but not when flying'],
+				ifShapeshifted = {
+					name = L['When shapeshifted...'],
+					type = 'select',
+					style = 'radio',
+					width = 'double',
+					values = {
+						[ACTION_NOOP] = L["... do nothing."],
+						[ACTION_SMOOTH] = L["... cancel shapeshift and use a mount."],
+						[ACTION_TOGGLE] = L["... cancel shapeshift."],
+					},
+					hidden = function() return not addon.canShapeshift end,
+					order = 46,
+				},		
+				ifInVehicle = {
+					name = L['When in a vehicle...'],
+					type = 'select',
+					style = 'radio',
+					width = 'double',
+					values = {
+						[ACTION_NOOP] = L["... do nothing."],
+						[ACTION_TOGGLE] = L["... leave the vehicle."],
+					},
+					order = 47,
+				},		
+				secureFlight = {
+					name = L['Secure flight'],
 					desc = L['Check this not to dismount/exit vehicle/cancel shapeshift when flying.'],
 					type = 'toggle',
 					width = 'full',
-					get = function() return addon.db.profile.safeDismount end,
-					set = function(_, value) addon.db.profile.safeDismount = value end,
-					disabled = function() return not addon.db.profile.autoDismount end,
 					order = 50,
 				},
 				_actions = {
@@ -353,12 +399,10 @@ function addon.GetOptions()
 					usage = L['Drag and drop an action or right-click to clear.'],
 					type = 'input',
 					control = 'ActionSlot',
+					get = GetAction,
+					set = SetAction,
+					validate = ValidateAction,
 					order = 60,
-					get = function() return addon.db.char.combatAction end,
-					set = function(_, value) addon.db.char.combatAction = value end,
-					validate = function(_, value)
-						return (value ~= "macro:Squire2") or L["Infinite recursion is bad !"]
-					end
 				},
 				movingAction = {
 					name = L['Moving action'],
@@ -366,12 +410,10 @@ function addon.GetOptions()
 					usage = L['Drag and drop an action or right-click to clear.'],
 					type = 'input',
 					control = 'ActionSlot',
+					get = GetAction,
+					set = SetAction,
+					validate = ValidateAction,
 					order = 65,
-					get = function() return addon.db.char.movingAction end,
-					set = function(_, value) addon.db.char.movingAction = value end,
-					validate = function(_, value)
-						return (value ~= "macro:Squire2") or L["Infinite recursion is bad !"]
-					end
 				},
 			}
 		}
