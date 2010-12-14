@@ -279,7 +279,7 @@ local modifierList = {
 	shift = SHIFT_KEY,
 	rightbutton = L["Right mouse button"],
 }
-		
+
 local options
 function addon.GetOptions()
 	if not options then
@@ -328,7 +328,7 @@ function addon.GetOptions()
 				},
 				groundModifier = {
 					name = L['Ground modifier'],
-					desc = L['Select a modifier to enforce the use of a ground mount.'],
+					desc = L['Select a modifier to enforce the use of a ground mount, even in a flyable area.'],
 					type = 'select',
 					values = modifierList,
 					order = 35,
@@ -346,41 +346,38 @@ function addon.GetOptions()
 					order = 40,
 				},
 				ifMounted = {
-					name = L['When already on a mount...'],
+					name = L['On a mount:'],
+					desc = L['When already on a mount, what should Squire2 do ?'],
 					type = 'select',
-					style = 'radio',
-					width = 'double',
 					values = {
-						[ACTION_NOOP] = L["... do nothing."],
-						[ACTION_SMOOTH] = L["... dismount and use another mount."],
-						[ACTION_TOGGLE] = L["... dismount."],
+						[ACTION_NOOP] = L["Do nothing."],
+						[ACTION_SMOOTH] = L["Dismount and continue."],
+						[ACTION_TOGGLE] = L["Dismount only."],
 					},
 					order = 45,
 				},
 				ifShapeshifted = {
-					name = L['When shapeshifted...'],
+					name = L['When shapeshifted:'],
+					desc = L['When shapeshifted, what should Squire2 do ?'],
 					type = 'select',
-					style = 'radio',
-					width = 'double',
 					values = {
-						[ACTION_NOOP] = L["... do nothing."],
-						[ACTION_SMOOTH] = L["... cancel shapeshift and use a mount."],
-						[ACTION_TOGGLE] = L["... cancel shapeshift."],
+						[ACTION_NOOP] = L["Do nothing."],
+						[ACTION_SMOOTH] = L["Cancel shapeshift and continue."],
+						[ACTION_TOGGLE] = L["Cancel shapeshift only."],
 					},
 					hidden = function() return not addon.canShapeshift end,
 					order = 46,
-				},		
+				},
 				ifInVehicle = {
-					name = L['When in a vehicle...'],
+					name = L['In a vehicle:'],
+					desc = L['When already in a vehicle, what should Squire2 do ?'],
 					type = 'select',
-					style = 'radio',
-					width = 'double',
 					values = {
-						[ACTION_NOOP] = L["... do nothing."],
-						[ACTION_TOGGLE] = L["... leave the vehicle."],
+						[ACTION_NOOP] = L["Do nothing."],
+						[ACTION_TOGGLE] = L["Leave the vehicle."],
 					},
 					order = 47,
-				},		
+				},
 				secureFlight = {
 					name = L['Secure flight'],
 					desc = L['Check this not to dismount/exit vehicle/cancel shapeshift when flying.'],
