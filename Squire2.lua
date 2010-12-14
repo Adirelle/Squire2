@@ -139,6 +139,7 @@ function addon:Initialize()
 	end
 
 	self:SetupMacro()
+	self:UpdateMacroTemplate()
 end
 
 local UIErrorsFrame = UIErrorsFrame
@@ -432,7 +433,7 @@ end
 function addon:UpdateDismountAction()
 	if not self:CanDoSecureStuff('UpdateDismountAction') then return end
 	local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]"
-	if self.canShapeshift then 
+	if self.canShapeshift then
 		dismountMacro = dismountMacro .. "\n/cancelform [form]"
 	end
 	self:SetButtonAction(self.button, 'macrotext', dismountMacro, "-dismount")
