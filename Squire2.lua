@@ -423,7 +423,7 @@ function addon:UpdateMacroTemplate()
 		tinsert(cmds, 1, "/stopmacro "..tconcat(stopConds, ""))
 	end
 	macroTemplate = tconcat(cmds, "\n")
-	noopConditions = (#noopConds > 0) and tconcat(noopConds, "") or ""
+	noopConditions = tconcat(noopConds, "")
 	Debug("UpdateMacroTemplate: noopConditions=", noopConditions)
 	Debug("UpdateMacroTemplate: template=\n"..macroTemplate)
 	self:UpdateDismountAction()
@@ -638,11 +638,11 @@ function addon:BuildAction(clickedButton)
 	AddActionCommand(mainCmd, mainArg, noopConds)
 
 	-- Join all
-	return #cmds > 0 and tconcat(cmds, "\n") or ""
+	return tconcat(cmds, "\n")
 end
 
 function addon:UpdateAction(clickedButton)
-	local action = self:BuildAction(clickedButton) or ""
+	local action = self:BuildAction(clickedButton)
 	local macro = gsub(macroTemplate, "%%ACTION%%", action)
 	self:SetButtonAction(self.button, "macrotext", macro, "")
 end
