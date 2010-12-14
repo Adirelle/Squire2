@@ -375,8 +375,8 @@ end
 -- Internal macro template
 ----------------------------------------------
 
-local macroTemplate
-local noopConditions
+local macroTemplate = ""
+local noopConditions = ""
 
 local modifierConds = {
 	any = "modifier",
