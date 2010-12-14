@@ -115,6 +115,9 @@ function addon:Initialize()
 	button:SetScript("PostClick", self.ButtonPostClick)
 	self.button = button
 
+	local secondaryButton = CreateFrame("Button", "Squire2SecondaryButton", nil, "SecureActionButtonTemplate")
+	secondaryButton:RegisterForClicks("AnyUp")
+	self.secondaryButton = secondaryButton
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_DISABLED')
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
@@ -315,7 +318,7 @@ function addon:SPELLS_CHANGED(event)
 		end
 		tinsert(addon.mountSpells, RUNNING_WILD_ID)
 	end
-	
+
 	self:UPDATE_SHAPESHIFT_FORMS(event)
 end
 
@@ -439,26 +442,23 @@ end
 -- Core logic
 ----------------------------------------------
 
-function addon:SetButtonAction(actionType, actionData, prefix, suffix)
-	if not prefix then prefix = "" end
-	if not suffix then suffix = "" end
+function addon:SetButtonAction(button, actionType, actionData, suffix)
 	if actionType and actionData then
-		local button = addon.button
 		if actionType == 'spell' then
 			actionData = spellNames[actionData] or actionData
 		elseif actionType == 'item' then
 			actionData = tonumber(actionData) and GetItemInfo(tonumber(actionData)) or actionData
 		end
-		button:SetAttribute(prefix..actionType..suffix, actionData)
+		button:SetAttribute(actionType..suffix, actionData)
 		if actionType == 'macrotext' then
-			button:SetAttribute(prefix..'macro'..suffix, nil)
+			button:SetAttribute('macro'..suffix, nil)
 			actionType = 'macro'
 		end
-		button:SetAttribute(prefix..'type'..suffix, actionType)
+		button:SetAttribute('type'..suffix, actionType)
 	else
-		button:SetAttribute(prefix..'type'..suffix, nil)
+		button:SetAttribute('type'..suffix, nil)
 	end
-	Debug('SetButtonAction', actionType, actionData, prefix, suffix)
+	Debug('SetButtonAction', button, 'action=', actionType, 'param=', actionData, 'suffix=', suffix)
 end
 
 function addon:GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
@@ -564,7 +564,7 @@ function addon:ExploreActions(groundOnly, isMoving, isOutdoors, primary, seconda
 	end
 end
 
-local function GetMacroCommand(actionType, actionData)
+function addon:GetMacroCommand(actionType, actionData)
 	if actionType and actionData then
 		local id = strjoin(":", tostringall(actionType, actionData))
 		if actionType == 'spell' then
@@ -572,8 +572,9 @@ local function GetMacroCommand(actionType, actionData)
 		elseif actionType == 'item' then
 			return "/use", GetItemInfo(actionData) or actionData, id
 		else
-			Debug("Can't handle action:", actionType, actionData)
-			--return "/run", "print("..format("%q", "Can't handle %s:%s right now", actionType, actionData)..")")
+			local key = gsub(id, "%W", "_")
+			self:SetButtonAction(self.secondaryButton, actionType, actionData, '-'..key)
+			return "/click", self.secondaryButton:GetName().." "..key, id
 		end
 	end
 end
@@ -591,11 +592,11 @@ local function AddActionCommand(cmd, arg, noopConds)
 end
 
 function addon:BuildAction(clickedButton)
-	wipe(cmds)	
+	wipe(cmds)
 	local noopConds = noopConditions
 	local actionType, actionData
 	local isMoving = GetUnitSpeed("player") > 0 or IsFalling()
-	
+
 	-- First, determine the main action
 	if clickedButton == "combat" then
 		if addon.db.char.combatAction then
@@ -605,24 +606,24 @@ function addon:BuildAction(clickedButton)
 		end
 	else
 		local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
-		actionType, actionData = self:ExploreActions(groundOnly, isMoving, IsOutdoors(), primary or GROUND, secondary, tertiary)	
+		actionType, actionData = self:ExploreActions(groundOnly, isMoving, IsOutdoors(), primary or GROUND, secondary, tertiary)
 	end
-	local mainCmd, mainArg, mainId = GetMacroCommand(actionType, actionData)
-	
+	local mainCmd, mainArg, mainId = self:GetMacroCommand(actionType, actionData)
+
 	-- Add action with ground modifier, if applicable
 	local groundModifier = addon.db.profile.groundModifier and modifierConds[addon.db.profile.groundModifier]
 	if groundModifier then
-		local groundCmd, groundArg, groundId = GetMacroCommand(self:GetActionForMount(GROUND, isMoving, clickedButton == "combat", true))
+		local groundCmd, groundArg, groundId = self:GetMacroCommand(self:GetActionForMount(GROUND, isMoving, clickedButton == "combat", true))
 		if groundId ~= mainId then
 			AddActionCommand(groundCmd, "["..groundModifier.."]"..groundArg, noopConds)
 			noopConds = noopConds.."["..groundModifier.."]"
 		end
 	end
-	
+
 	-- Add modified combat actions
 	if clickedButton == "combat" and not addon.db.char.combatAction then
-		local waterCmd, waterArg, waterId = GetMacroCommand(self:GetActionForMount(WATER, true, true, false))
-		local outdoorsCmd, outdoorsArg, outdoorsId = GetMacroCommand(self:GetActionForMount(GROUND, true, true, true))
+		local waterCmd, waterArg, waterId = self:GetMacroCommand(self:GetActionForMount(WATER, true, true, false))
+		local outdoorsCmd, outdoorsArg, outdoorsId = self:GetMacroCommand(self:GetActionForMount(GROUND, true, true, true))
 		if waterId ~= mainId then
 			AddActionCommand(waterCmd, "[swimming]"..waterArg, noopConds)
 			noopConds = noopConds.."[swimming]"
@@ -632,10 +633,10 @@ function addon:BuildAction(clickedButton)
 			noopConds = noopConds.."[outdoors]"
 		end
 	end
-	
+
 	-- Finally add the main action
 	AddActionCommand(mainCmd, mainArg, noopConds)
-	
+
 	-- Join all
 	return #cmds > 0 and tconcat(cmds, "\n") or ""
 end
@@ -643,7 +644,7 @@ end
 function addon:UpdateAction(clickedButton)
 	local action = self:BuildAction(clickedButton) or ""
 	local macro = gsub(macroTemplate, "%%ACTION%%", action)
-	self:SetButtonAction("macrotext", macro, "", "")
+	self:SetButtonAction(self.button, "macrotext", macro, "")
 end
 
 --@alpha@
