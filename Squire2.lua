@@ -57,12 +57,12 @@ addon.ACTION_NOOP, addon.ACTION_SMOOTH, addon.ACTION_TOGGLE = ACTION_NOOP, ACTIO
 
 local DEFAULTS = {
 	profile = {
-		ifMounted = ACTION_SMOOTH,
-		ifShapeshifted = ACTION_SMOOTH,
-		ifInVehicle = ACTION_TOGGLE,
-		secureFlight = true,
 		groundModifier = "any",
 		dismountModifier = "none",
+		ifInVehicle = ACTION_NOOP,
+		ifMounted = GetCVarBool('autoDismount') and ACTION_SMOOTH or ACTION_NOOP,
+		ifShapeshifted = GetCVarBool('autoUnshift') and ACTION_SMOOTH or ACTION_NOOP,
+		secureFlight = not GetCVarBool('autoDismountFlying'),
 	},
 	char = { mounts = { ['*'] = true } },
 }
