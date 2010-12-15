@@ -614,8 +614,8 @@ function addon:BuildAction(clickedButton)
 	-- Add action with ground modifier, if applicable
 	local groundModifier = addon.db.profile.groundModifier and modifierConds[addon.db.profile.groundModifier]
 	if groundModifier then
-		local groundCmd, groundArg, groundId = self:GetMacroCommand(self:GetActionForMount(GROUND, isMoving, clickedButton == "combat", true))
-		if groundId ~= mainId then
+		local groundCmd, groundArg, groundId = self:GetMacroCommand(self:GetActionForMount(GROUND, isMoving, inCombat, true))
+		if groundId and groundId ~= mainId then
 			AddActionCommand(groundCmd, "["..groundModifier.."]"..groundArg, noopConds)
 			noopConds = noopConds.."["..groundModifier.."]"
 		end
@@ -625,11 +625,11 @@ function addon:BuildAction(clickedButton)
 	if clickedButton == "combat" and not addon.db.char.combatAction then
 		local waterCmd, waterArg, waterId = self:GetMacroCommand(self:GetActionForMount(WATER, true, true, false))
 		local outdoorsCmd, outdoorsArg, outdoorsId = self:GetMacroCommand(self:GetActionForMount(GROUND, true, true, true))
-		if waterId ~= mainId then
+		if waterId and waterId ~= mainId then
 			AddActionCommand(waterCmd, "[swimming]"..waterArg, noopConds)
 			noopConds = noopConds.."[swimming]"
 		end
-		if outdoorsId ~= mainId then
+		if outdoorsId and outdoorsId ~= mainId then
 			AddActionCommand(outdoorsCmd, "[outdoors]"..outdoorsArg, noopConds)
 			noopConds = noopConds.."[outdoors]"
 		end
