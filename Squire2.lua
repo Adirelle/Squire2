@@ -567,38 +567,81 @@ end
 
 function addon:GetMacroCommand(actionType, actionData)
 	if actionType and actionData then
-		local id = strjoin(":", tostringall(actionType, actionData))
 		if actionType == 'spell' then
-			return "/cast", spellNames[actionData] or actionData, id
+			return "/cast", spellNames[actionData] or actionData
 		elseif actionType == 'item' then
-			return "/use", GetItemInfo(actionData) or actionData, id
+			return "/cast", GetItemInfo(actionData) or actionData
 		else
 			local key = gsub(id, "%W", "_")
 			self:SetButtonAction(self.secondaryButton, actionType, actionData, '-'..key)
-			return "/click", self.secondaryButton:GetName().." "..key, id
+			return "/click", self.secondaryButton:GetName().." "..key
 		end
 	end
 end
 
 local cmds = {}
+local lastCmdIndex
 
-local function AddActionCommand(cmd, arg, noopConds)
-	if cmd and arg then
-		if noopConds ~= "" then
-			tinsert(cmds, cmd.." "..noopConds..";"..arg)
+local function AddActionCommand(cmd, cond, arg)
+	if not cmd or not arg then return end
+	if lastCmdIndex and cmd == cmds[lastCmdIndex] then
+		-- Same command
+		if cond == "" and arg == cmds[#cmds] then
+			-- Same argument, remove previous entries with same argument but a condition
+			-- e.g. "[swimming]Foo;[mod]Bar;Bar" => "[swimming]Foo;Bar"
+			local i = #cmds
+			while i > lastCmdIndex + 3 and arg == cmds[i] do
+				i = i - 3
+			end
+			cmds[i-1] = ""
+			for j = i+1, #cmds do
+				cmds[j] = nil
+			end
+			return
+		end
+		-- Prepare for a new condition,argument pair
+		tinsert(cmds, ";")
+	else
+		-- New command
+		if lastCmdIndex then
+			tinsert(cmds, "\n")
+		end
+		tinsert(cmds, cmd)
+		lastCmdIndex = #cmds
+		if noopConditions then
+			tinsert(cmds, " "..noopConditions..";")
 		else
-			tinsert(cmds, cmd.." "..arg)
+			tinsert(cmds, " ")
 		end
 	end
+	-- Append the condition and argument
+	tinsert(cmds, cond)
+	tinsert(cmds, arg)
 end
 
 function addon:BuildAction(clickedButton)
 	wipe(cmds)
-	local noopConds = noopConditions
+	lastCmdIndex = nil
+	
 	local actionType, actionData
 	local isMoving = GetUnitSpeed("player") > 0 or IsFalling()
 
-	-- First, determine the main action
+	-- Add action with ground modifier, if applicable
+	local groundModifier = addon.db.profile.groundModifier and modifierConds[addon.db.profile.groundModifier]
+	if groundModifier then
+		local groundCmd, groundArg = self:GetMacroCommand(self:GetActionForMount(GROUND, isMoving, inCombat, true))
+		AddActionCommand(groundCmd, "["..groundModifier.."]", groundArg)
+	end
+
+	-- Add modified combat actions
+	if clickedButton == "combat" and not addon.db.char.combatAction then
+		local waterCmd, waterArg = self:GetMacroCommand(self:GetActionForMount(WATER, true, true, false))
+		local outdoorsCmd, outdoorsArg = self:GetMacroCommand(self:GetActionForMount(GROUND, true, true, true))
+		AddActionCommand(waterCmd, "[swimming]", waterArg)
+		AddActionCommand(outdoorsCmd, "[outdoors]", outdoorsArg)
+	end
+
+	-- Add the main action
 	if clickedButton == "combat" then
 		if addon.db.char.combatAction then
 			actionType, actionData = strsplit(':', addon.db.char.combatAction)
@@ -609,37 +652,11 @@ function addon:BuildAction(clickedButton)
 		local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
 		actionType, actionData = self:ExploreActions(groundOnly, isMoving, IsOutdoors(), primary or GROUND, secondary, tertiary)
 	end
-	local mainCmd, mainArg, mainId = self:GetMacroCommand(actionType, actionData)
-
-	-- Add action with ground modifier, if applicable
-	local groundModifier = addon.db.profile.groundModifier and modifierConds[addon.db.profile.groundModifier]
-	if groundModifier then
-		local groundCmd, groundArg, groundId = self:GetMacroCommand(self:GetActionForMount(GROUND, isMoving, inCombat, true))
-		if groundId and groundId ~= mainId then
-			AddActionCommand(groundCmd, "["..groundModifier.."]"..groundArg, noopConds)
-			noopConds = noopConds.."["..groundModifier.."]"
-		end
-	end
-
-	-- Add modified combat actions
-	if clickedButton == "combat" and not addon.db.char.combatAction then
-		local waterCmd, waterArg, waterId = self:GetMacroCommand(self:GetActionForMount(WATER, true, true, false))
-		local outdoorsCmd, outdoorsArg, outdoorsId = self:GetMacroCommand(self:GetActionForMount(GROUND, true, true, true))
-		if waterId and waterId ~= mainId then
-			AddActionCommand(waterCmd, "[swimming]"..waterArg, noopConds)
-			noopConds = noopConds.."[swimming]"
-		end
-		if outdoorsId and outdoorsId ~= mainId then
-			AddActionCommand(outdoorsCmd, "[outdoors]"..outdoorsArg, noopConds)
-			noopConds = noopConds.."[outdoors]"
-		end
-	end
-
-	-- Finally add the main action
-	AddActionCommand(mainCmd, mainArg, noopConds)
+	local mainCmd, mainArg = self:GetMacroCommand(actionType, actionData)
+	AddActionCommand(mainCmd, "", mainArg)
 
 	-- Join all
-	return tconcat(cmds, "\n")
+	return tconcat(cmds, "")
 end
 
 function addon:UpdateAction(clickedButton)
