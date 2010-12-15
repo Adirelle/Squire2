@@ -380,10 +380,10 @@ local macroTemplate = ""
 local noopConditions = ""
 
 local modifierConds = {
-	any = "modifier",
-	control = "modifier:ctrl",
-	alt = "modifier:alt",
-	shift = "modifier:shift",
+	any = "mod",
+	control = "mod:ctrl",
+	alt = "mod:alt",
+	shift = "mod:shift",
 	rightbutton = "button:2",
 }
 
