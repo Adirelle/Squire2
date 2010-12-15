@@ -34,7 +34,7 @@ function addon:InitializeConfig()
 	end
 
 	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", addon.GetOptions)
-	AceConfigDialog:SetDefaultSize("Squire2", 600, 375)
+	--AceConfigDialog:SetDefaultSize("Squire2", 600, 500)
 
 	panelButton = CreateFrame("Button", "Squire2ConfigButton", SpellBookCompanionsFrame, "UIPanelButtonTemplate")
 	panelButton:SetText("Squire2")
@@ -349,6 +349,7 @@ function addon.GetOptions()
 					name = L['On a mount:'],
 					desc = L['When already on a mount, what should Squire2 do ?'],
 					type = 'select',
+					width = 'double',
 					values = {
 						[ACTION_NOOP] = L["Do nothing."],
 						[ACTION_SMOOTH] = L["Dismount and continue."],
@@ -360,6 +361,7 @@ function addon.GetOptions()
 					name = L['When shapeshifted:'],
 					desc = L['When shapeshifted, what should Squire2 do ?'],
 					type = 'select',
+					width = 'double',
 					values = {
 						[ACTION_NOOP] = L["Do nothing."],
 						[ACTION_SMOOTH] = L["Cancel shapeshift and continue."],
@@ -372,6 +374,7 @@ function addon.GetOptions()
 					name = L['In a vehicle:'],
 					desc = L['When already in a vehicle, what should Squire2 do ?'],
 					type = 'select',
+					width = 'double',
 					values = {
 						[ACTION_NOOP] = L["Do nothing."],
 						[ACTION_TOGGLE] = L["Leave the vehicle."],
