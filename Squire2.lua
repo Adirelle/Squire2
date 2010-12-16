@@ -123,16 +123,13 @@ function addon:Initialize()
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
+	eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
 
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
 
 	-- Hook UIErrorsFrame_OnEvent to eat errors
 	self.orig_UIErrorsFrame_OnEvent = UIErrorsFrame_OnEvent
 	UIErrorsFrame_OnEvent = self.UIErrorsFrame_OnEvent
-
-	if playerClass == "DRUID" or playerClass == "SHAMAN" then
-		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
-	end
 
 	if IsLoggedIn() then
 		self:SPELLS_CHANGED("OnEnable")
@@ -142,22 +139,8 @@ function addon:Initialize()
 	self:UpdateMacroTemplate()
 end
 
-local UIErrorsFrame = UIErrorsFrame
-local catchMessages = false
-
-function addon.ButtonPreClick(_, button)
-	if Squire2Button:CanChangeAttribute() and button ~= "dismount" then
-		addon:UpdateAction(button)
-	end
-	catchMessages = true
-end
-
-function addon.ButtonPostClick()
-	catchMessages = false
-end
-
 function addon.UIErrorsFrame_OnEvent(frame, event, ...)
-	if catchMessages and event == 'UI_ERROR_MESSAGE' then
+	if addon.catchMessages and event == 'UI_ERROR_MESSAGE' then
 		return Debug(event, ...)
 	else
 		return addon.orig_UIErrorsFrame_OnEvent(frame, event, ...)
@@ -219,6 +202,22 @@ function addon:ConfigChanged()
 end
 
 ----------------------------------------------
+-- Chat commands and binding labels
+----------------------------------------------
+
+BINDING_HEADER_SQUIRE2 = "Squire2"
+_G["BINDING_NAME_CLICK Squire2Button:LeftButton"] = L["Use Squire2"]
+_G["BINDING_NAME_CLICK Squire2Button:dismount"] = L["Dismount"]
+
+SLASH_SQUIRE1 = "/squire2"
+SLASH_SQUIRE2 = "/squire"
+SLASH_SQUIRE3 = "/sq"
+SLASH_SQUIRE4 = "/sq2"
+function SlashCmdList.SQUIRE()
+	addon:OpenConfig()
+end
+
+----------------------------------------------
 -- Squire2 visible macro
 ----------------------------------------------
 
@@ -246,19 +245,43 @@ function addon:SetupMacro(create)
 end
 
 ----------------------------------------------
--- Chat commands and binding labels
+-- Secure button stuff
 ----------------------------------------------
 
-BINDING_HEADER_SQUIRE2 = "Squire2"
-_G["BINDING_NAME_CLICK Squire2Button:LeftButton"] = L["Use Squire2"]
-_G["BINDING_NAME_CLICK Squire2Button:dismount"] = L["Dismount"]
+function addon.ButtonPreClick(_, button)
+	if addon.button:CanChangeAttribute() and button ~= "dismount" then
+		addon:UpdateAction(button)
+	end
+	addon.catchMessages = true
+end
 
-SLASH_SQUIRE1 = "/squire2"
-SLASH_SQUIRE2 = "/squire"
-SLASH_SQUIRE3 = "/sq"
-SLASH_SQUIRE4 = "/sq2"
-function SlashCmdList.SQUIRE()
-	addon:OpenConfig()
+function addon.ButtonPostClick()
+	addon.catchMessages = nil
+end
+
+function addon:SetButtonAction(button, actionType, actionData, suffix)
+	if actionType and actionData then
+		if actionType == 'spell' then
+			actionData = spellNames[actionData] or actionData
+		elseif actionType == 'item' then
+			actionData = tonumber(actionData) and GetItemInfo(tonumber(actionData)) or actionData
+		end
+		button:SetAttribute(actionType..suffix, actionData)
+		if actionType == 'macrotext' then
+			button:SetAttribute('macro'..suffix, nil)
+			actionType = 'macro'
+		end
+		button:SetAttribute('type'..suffix, actionType)
+	else
+		button:SetAttribute('type'..suffix, nil)
+	end
+	Debug('SetButtonAction', button, 'action=', actionType, 'param=', actionData, 'suffix=', suffix)
+end
+
+function addon:UpdateAction(clickedButton)
+	local action = self:BuildAction(clickedButton)
+	local macro = gsub(macroTemplate, "%%ACTION%%", action)
+	self:SetButtonAction(self.button, "macrotext", macro, "")
 end
 
 ----------------------------------------------
@@ -373,7 +396,7 @@ function addon:ChooseMount(mountType)
 end
 
 ----------------------------------------------
--- Internal macro template
+-- Macro building
 ----------------------------------------------
 
 local macroTemplate = ""
@@ -439,131 +462,6 @@ function addon:UpdateDismountAction()
 	self:SetButtonAction(self.button, 'macrotext', dismountMacro, "-dismount")
 end
 
-----------------------------------------------
--- Core logic
-----------------------------------------------
-
-function addon:SetButtonAction(button, actionType, actionData, suffix)
-	if actionType and actionData then
-		if actionType == 'spell' then
-			actionData = spellNames[actionData] or actionData
-		elseif actionType == 'item' then
-			actionData = tonumber(actionData) and GetItemInfo(tonumber(actionData)) or actionData
-		end
-		button:SetAttribute(actionType..suffix, actionData)
-		if actionType == 'macrotext' then
-			button:SetAttribute('macro'..suffix, nil)
-			actionType = 'macro'
-		end
-		button:SetAttribute('type'..suffix, actionType)
-	else
-		button:SetAttribute('type'..suffix, nil)
-	end
-	Debug('SetButtonAction', button, 'action=', actionType, 'param=', actionData, 'suffix=', suffix)
-end
-
-function addon:GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
-	if not isMoving and not inCombat then
-		local id = self:ChooseMount(mountType)
-		if id then
-			Debug('GetActionForMount => spell', spellNames[id] or id)
-			return 'spell', id
-		end
-	end
-	if isMoving and addon.db.char.movingAction and (mountType ~= AIR or not IsFalling()) then
-		Debug('GetActionForMount (moving) =>', addon.db.char.movingAction)
-		local actionType, actionData = strsplit(':', addon.db.char.movingAction)
-		if actionType and actionData then
-			return actionType, actionData
-		end
-	end
-	if self.GetAlternateActionForMount then
-		return self:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-	end
-end
-
-if playerClass == 'DRUID' then
-
-	local flyingForm = 33943 -- Flight form
-	local movingForms = {
-		783, -- Travel form
-		1066, -- Aquatic form
-		flyingForm
-	}
-	addon.mountSpells = movingForms
-
-	function addon:Post_UPDATE_SHAPESHIFT_FORMS()
-		flyingForm = knownSpells[40120] and 40120 or 33943
-		movingForms[3] = flyingForm
-	end
-
-	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if mountType == AIR then
-			return 'spell', addon.db.char.mounts[flyingForm] and IsUsableSpell(flyingForm) and knownSpells[flyingForm] -- Any flying form
-		elseif mountType == WATER then
-			return 'spell', addon.db.char.mounts[1066] and knownSpells[1066] -- Aquatic Form
-		elseif mountType == GROUND then
-			if isOutdoors and addon.db.char.mounts[783] and knownSpells[783] then
-				return 'spell', 783 -- Travel Form
-			elseif select(5, GetTalentInfo(2, 6)) == 2 then -- Feral Swiftness
-				return 'spell', knownSpells[768] -- Cat Form
-			end
-		end
-	end
-
-elseif playerClass == 'SHAMAN' then
-
-	addon.mountSpells = { 2645 } -- Ghost Wolf
-	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if mountType == GROUND and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
-			return 'spell', addon.db.char.mounts[2645] and knownSpells[2645] -- Ghost Wolf
-		end
-	end
-
-elseif playerClass == 'HUNTER' then
-
-	addon.mountSpells = { 5118 } -- Aspect of the Cheetah
-	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if mountType == GROUND and addon.db.char.mounts[5118] then
-			return 'spell', addon.db.char.mounts[5118] and knownSpells[5118] -- Aspect of the Cheetah
-		end
-	end
-
-end
-
-function addon:ExploreActions(groundOnly, isMoving, isOutdoors, primary, secondary, tertiary)
-	Debug('ExploreActions', "groundOnly=", groundOnly, "moving=", isMoving, "outdoors=", isOutdoors, "mounts=[", primary, secondary, tertiary, "]")
-	if primary == AIR and groundOnly then
-		if secondary then
-			Debug('ExploreActions, skiping AIR type with groundOnly')
-			return self:ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
-		else
-			return
-		end
-	end
-	local actionType, actionData = self:GetActionForMount(primary, isMoving, false, isOutdoors)
-	if actionType and actionData then
-		return actionType, actionData
-	end
-	if secondary then
-		Debug('ExploreActions, trying secondary')
-		actionType, actionData = self:ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
-		if actionType and actionData then
-			return actionType, actionData
-		end
-	end
-	if not isMoving then
-		Debug('ExploreActions, trying with moving')
-		actionType, actionData = self:ExploreActions(groundOnly, true, isOutdoors, primary, secondary, tertiary)
-		if actionType and actionData then
-			return actionType, actionData
-		end
-	end
-	if not isOutdoors then
-		Debug('ExploreActions, trying outdoors')
-		return self:ExploreActions(groundOnly, isMoving, true, primary, secondary, tertiary)
-	end
-end
 
 function addon:GetMacroCommand(actionType, actionData)
 	if actionType and actionData then
@@ -659,14 +557,121 @@ function addon:BuildAction(clickedButton)
 	return tconcat(cmds, "")
 end
 
-function addon:UpdateAction(clickedButton)
-	local action = self:BuildAction(clickedButton)
-	local macro = gsub(macroTemplate, "%%ACTION%%", action)
-	self:SetButtonAction(self.button, "macrotext", macro, "")
+----------------------------------------------
+-- Core logic
+----------------------------------------------
+
+function addon:GetActionForMount(mountType, isMoving, inCombat, isOutdoors)
+	if not isMoving and not inCombat then
+		local id = self:ChooseMount(mountType)
+		if id then
+			Debug('GetActionForMount => spell', spellNames[id] or id)
+			return 'spell', id
+		end
+	end
+	if isMoving and addon.db.char.movingAction and (mountType ~= AIR or not IsFalling()) then
+		Debug('GetActionForMount (moving) =>', addon.db.char.movingAction)
+		local actionType, actionData = strsplit(':', addon.db.char.movingAction)
+		if actionType and actionData then
+			return actionType, actionData
+		end
+	end
+	if self.GetAlternateActionForMount then
+		return self:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
+	end
 end
 
---@alpha@
+function addon:ExploreActions(groundOnly, isMoving, isOutdoors, primary, secondary, tertiary)
+	Debug('ExploreActions', "groundOnly=", groundOnly, "moving=", isMoving, "outdoors=", isOutdoors, "mounts=[", primary, secondary, tertiary, "]")
+	if primary == AIR and groundOnly then
+		if secondary then
+			Debug('ExploreActions, skiping AIR type with groundOnly')
+			return self:ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
+		else
+			return
+		end
+	end
+	local actionType, actionData = self:GetActionForMount(primary, isMoving, false, isOutdoors)
+	if actionType and actionData then
+		return actionType, actionData
+	end
+	if secondary then
+		Debug('ExploreActions, trying secondary')
+		actionType, actionData = self:ExploreActions(groundOnly, isMoving, isOutdoors, secondary, tertiary)
+		if actionType and actionData then
+			return actionType, actionData
+		end
+	end
+	if not isMoving then
+		Debug('ExploreActions, trying with moving')
+		actionType, actionData = self:ExploreActions(groundOnly, true, isOutdoors, primary, secondary, tertiary)
+		if actionType and actionData then
+			return actionType, actionData
+		end
+	end
+	if not isOutdoors then
+		Debug('ExploreActions, trying outdoors')
+		return self:ExploreActions(groundOnly, isMoving, true, primary, secondary, tertiary)
+	end
+end
+
+----------------------------------------------
+-- Class-specific stuff
+----------------------------------------------
+
+if playerClass == 'DRUID' then
+
+	local flyingForm = 33943 -- Flight form
+	local movingForms = {
+		783, -- Travel form
+		1066, -- Aquatic form
+		flyingForm
+	}
+	addon.mountSpells = movingForms
+
+	function addon:Post_UPDATE_SHAPESHIFT_FORMS()
+		flyingForm = knownSpells[40120] and 40120 or 33943
+		movingForms[3] = flyingForm
+	end
+
+	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if mountType == AIR then
+			return 'spell', addon.db.char.mounts[flyingForm] and IsUsableSpell(flyingForm) and knownSpells[flyingForm] -- Any flying form
+		elseif mountType == WATER then
+			return 'spell', addon.db.char.mounts[1066] and knownSpells[1066] -- Aquatic Form
+		elseif mountType == GROUND then
+			if isOutdoors and addon.db.char.mounts[783] and knownSpells[783] then
+				return 'spell', 783 -- Travel Form
+			elseif select(5, GetTalentInfo(2, 6)) == 2 then -- Feral Swiftness
+				return 'spell', knownSpells[768] -- Cat Form
+			end
+		end
+	end
+
+elseif playerClass == 'SHAMAN' then
+
+	addon.mountSpells = { 2645 } -- Ghost Wolf
+	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if mountType == GROUND and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
+			return 'spell', addon.db.char.mounts[2645] and knownSpells[2645] -- Ghost Wolf
+		end
+	end
+
+elseif playerClass == 'HUNTER' then
+
+	addon.mountSpells = { 5118 } -- Aspect of the Cheetah
+	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if mountType == GROUND and addon.db.char.mounts[5118] then
+			return 'spell', addon.db.char.mounts[5118] and knownSpells[5118] -- Aspect of the Cheetah
+		end
+	end
+
+end
+
+----------------------------------------------
 -- Debug commands
+----------------------------------------------
+--@alpha@
 
 local function tocoloredstring(value)
 	if type(value) == "string" then
