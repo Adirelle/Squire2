@@ -572,7 +572,7 @@ function addon:GetMacroCommand(actionType, actionData)
 		elseif actionType == 'item' then
 			return "/cast", GetItemInfo(actionData) or actionData
 		else
-			local key = gsub(id, "%W", "_")
+			local key = gsub(actionType.."_"..actionData, "%W", "_")
 			self:SetButtonAction(self.secondaryButton, actionType, actionData, '-'..key)
 			return "/click", self.secondaryButton:GetName().." "..key
 		end
