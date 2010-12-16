@@ -52,6 +52,21 @@ local ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE = 1, 2, 3
 addon.ACTION_NOOP, addon.ACTION_SMOOTH, addon.ACTION_TOGGLE = ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE
 
 --------------------------------------------------------------------------------
+-- Upvalues
+--------------------------------------------------------------------------------
+
+local macroTemplate = ""
+local noopConditions = ""
+
+local modifierConds = {
+	any = "mod",
+	control = "mod:ctrl",
+	alt = "mod:alt",
+	shift = "mod:shift",
+	rightbutton = "button:2",
+}
+
+--------------------------------------------------------------------------------
 -- Initializing
 --------------------------------------------------------------------------------
 
@@ -399,17 +414,6 @@ end
 -- Macro building
 ----------------------------------------------
 
-local macroTemplate = ""
-local noopConditions = ""
-
-local modifierConds = {
-	any = "mod",
-	control = "mod:ctrl",
-	alt = "mod:alt",
-	shift = "mod:shift",
-	rightbutton = "button:2",
-}
-
 local cmds, noopConds, stopConds = {}, {}, {}
 
 local function AddCancelCommand(setting, command, condition, forceDismountCondition)
@@ -461,7 +465,6 @@ function addon:UpdateDismountAction()
 	end
 	self:SetButtonAction(self.button, 'macrotext', dismountMacro, "-dismount")
 end
-
 
 function addon:GetMacroCommand(actionType, actionData)
 	if actionType and actionData then
