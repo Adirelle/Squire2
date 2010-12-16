@@ -34,34 +34,44 @@ addon.L = L
 
 
 -- Config.lua
-L["... but not when flying"] = true
 L["Action overrides"] = true
 L["Any"] = true
 L["Bindings"] = true
+L["Cancel shapeshift and continue."] = true
+L["Cancel shapeshift only."] = true
 L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = true
-L["Check this to dismount, exit vehicle or cancel shapeshift resp. when on a mount, in a vehicle or shapeshifted."] = true
 L["Check this to let Squire2 use this mount or spell."] = true
 L["Combat action"] = true
 L["Create the Squire2 macro."] = true
 L["Define the action to use in combat instead of anything Squire2 might try."] = true
 L["Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available."] = true
+L["Dismount and continue."] = true
 L["Dismount modifier"] = true
+L["Dismount only."] = true
 L["Dismount"] = true
-L["Dismount/exit vehicle/cancel shapeshift"] = true
+L["Do nothing."] = true
 L["Drag and drop an action or right-click to clear."] = true
 L["Ground modifier"] = true
+L["In a vehicle:"] = true
 L["Infinite recursion is bad !"] = true
+L["Leave the vehicle."] = true
 L["Macro"] = true
 L["Moving action"] = true
 L["None"] = true
+L["On a mount:"] = true
 L["Right mouse button"] = true
+L["Secure flight"] = true
 L["Select a binding to dismount."] = true
 L["Select a binding to use Squire2 without a macro."] = true
 L["Select a modifier to enforce dismounting, even mid-air."] = true
-L["Select a modifier to enforce the use of a ground mount."] = true
+L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = true
 L["Squire2"] = true
 L["Toggle spellbook"] = true
 L["Use %s"] = true
+L["When already in a vehicle, what should Squire2 do ?"] = true
+L["When already on a mount, what should Squire2 do ?"] = true
+L["When shapeshifted, what should Squire2 do ?"] = true
+L["When shapeshifted:"] = true
 
 -- Squire2.lua
 L["Use Squire2"] = true
@@ -70,67 +80,87 @@ L["Use Squire2"] = true
 ------------------------ frFR ------------------------
 local locale = GetLocale()
 if locale == 'frFR' then
-L["... but not when flying"] = "... mais pas en vol"
 L["Action overrides"] = "Surchage des actions"
 L["Any"] = "N'importe lequel"
 L["Bindings"] = "Raccourcis"
+L["Cancel shapeshift and continue."] = "Démorphe et continue."
+L["Cancel shapeshift only."] = "Démorphe uniquement."
 L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = "Cochez ceci pour ne pas démonter/sortir du véhicule/annuler une transformation en volant."
-L["Check this to dismount, exit vehicle or cancel shapeshift resp. when on a mount, in a vehicle or shapeshifted."] = "Cochez ceci pour démonter, sortir du véhicule ou annuler une transformation plutôt que de tenter une autre action."
 L["Check this to let Squire2 use this mount or spell."] = "Cochez ceci pour que Squire2 utilise cette monture (ou ce sort)."
 L["Combat action"] = "Action en combat"
 L["Create the Squire2 macro."] = "Crée la macro Squire2."
 L["Define the action to use in combat instead of anything Squire2 might try."] = "Définit l'action à utiliser en combat."
 L["Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available."] = "Définissez l'action à entreprendre lors de mouvements au lieu des actions par défaut. Cela sera aussi utilisé en combat par défaut."
 L["Dismount"] = "Démonter"
+L["Dismount and continue."] = "Démonte et continue."
 L["Dismount modifier"] = "Modificateur pour démonter"
-L["Dismount/exit vehicle/cancel shapeshift"] = "Démonter/sortir du véhicule/annuler une transformation"
+L["Dismount only."] = "Démonte uniquement."
+L["Do nothing."] = "Ne fais rien."
 L["Drag and drop an action or right-click to clear."] = "Tirer et déposer une action ou clic-droit pour supprimer."
 L["Ground modifier"] = "Modificateur \"monture au sol\""
+L["In a vehicle:"] = "Dans un véhicule :"
 L["Infinite recursion is bad !"] = "La récursion infinie, c'est le mal !"
+L["Leave the vehicle."] = "Quitte le véhicule."
 L["Macro"] = "Macro"
 L["Moving action"] = "Action en mouvement"
 L["None"] = "Aucun"
+L["On a mount:"] = "Sur une monture :"
 L["Right mouse button"] = "Bouton droit de la souris"
+L["Secure flight"] = "Vol sécurisé."
 L["Select a binding to dismount."] = "Choisissez un raccourci pour démonter."
 L["Select a binding to use Squire2 without a macro."] = "Choisissez un raccourci pour utiliser Squire2 sans macro."
 L["Select a modifier to enforce dismounting, even mid-air."] = "Choisissez une touche pour forcer à descendre de monture, même en plein vol."
-L["Select a modifier to enforce the use of a ground mount."] = "Choisissez un modification pour forcer l'utilisation d'une monture au sol."
+L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = "Choisissez une touche de mofification pour force l'utilisation d'une monture au sol, même dans les zones volantes."
 L["Squire2"] = "Squire2"
 L["Toggle spellbook"] = "Livre de sorts"
 L["Use %s"] = "Utiliser %s"
 L["Use Squire2"] = "Utiliser Squire2"
+L["When already in a vehicle, what should Squire2 do ?"] = "Lorsque vous êtes dans un véhicule, que dois faire Squire2 ?"
+L["When already on a mount, what should Squire2 do ?"] = "Lorsque vous êtes déjà sur une monture, que dois faire Squire2 ?"
+L["When shapeshifted, what should Squire2 do ?"] = "Lorsque vous êtes métamorphosé, que dois faire Squire2 ?"
+L["When shapeshifted:"] = "Métamorphosé :"
 
 ------------------------ deDE ------------------------
 elseif locale == 'deDE' then
-L["... but not when flying"] = "... aber nicht während des Fliegens"
 L["Action overrides"] = "Überschreibende Aktionen"
 L["Any"] = "Beliebig"
 L["Bindings"] = "Tastenbelegungen"
-L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = "Verhindert das Absitzen/Fahrzeug verlassen/Formwechseln während des Fliegens."
-L["Check this to dismount, exit vehicle or cancel shapeshift resp. when on a mount, in a vehicle or shapeshifted."] = "Absitzen, Fahrzeug verlassen oder Form wechseln respektive des jeweiligen Zustands."
-L["Check this to let Squire2 use this mount or spell."] = "Anhacken lässt Squire2 dieses Reittier benutzen."
+L["Cancel shapeshift and continue."] = "Gestalt verlassen und weitermachen."
+L["Cancel shapeshift only."] = "Nur Gestalt verlassen."
+L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = "Verhindert Absitzen/Fahrzeug verlassen/Gestaltwandel während des Fliegens."
+L["Check this to let Squire2 use this mount or spell."] = "Anhacken, um Squire2 dieses Reittier benutzen zu lassen."
 L["Combat action"] = "Aktion im Kampf"
 L["Create the Squire2 macro."] = "Erzeugt das Squire2 Makro."
 L["Define the action to use in combat instead of anything Squire2 might try."] = "Bestimmt die Aktion, die im Kampf verwendet werden soll."
 L["Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available."] = "Bestimmt die Aktion, die während einer Bewegung verwendet werden soll. Es wird versucht, diese auch im Kampf anzuwenden, falls nichts anderes verfügbar ist."
 L["Dismount"] = "Absitzen"
+L["Dismount and continue."] = "Absitzen und weitermachen."
 L["Dismount modifier"] = "Absitzen Modifikator"
-L["Dismount/exit vehicle/cancel shapeshift"] = "Absitzen/Fahrzeug verlassen/Gestaltwandeln"
+L["Dismount only."] = "Nur Absitzen."
+L["Do nothing."] = "Nichts machen."
 L["Drag and drop an action or right-click to clear."] = "Drag 'n Drop bestimmt eine Aktion, Rechts-Klick löscht diese."
 L["Ground modifier"] = "Bodenmodifikator"
+L["In a vehicle:"] = "In einem Fahrzeug:"
 L["Infinite recursion is bad !"] = "Unendliche Rekursion ist schlecht!"
+L["Leave the vehicle."] = "Das Fahrzeug verlassen."
 L["Macro"] = "Makro"
 L["Moving action"] = "Aktion während Bewegung"
 L["None"] = "Nichts"
+L["On a mount:"] = "Auf einem Reittier:"
 L["Right mouse button"] = "Rechts-Klick"
+L["Secure flight"] = "Sicherer Flug"
 L["Select a binding to dismount."] = "Wählt eine Tastenbelegung für das Absitzen aus."
 L["Select a binding to use Squire2 without a macro."] = "Wählt eine Tastenbelegung für Squire2 ohne Makrobenutzung aus."
 L["Select a modifier to enforce dismounting, even mid-air."] = "Wählt einen Modifikator aus, um das Absitzen (auch während des Fliegens) zu erzwingen."
-L["Select a modifier to enforce the use of a ground mount."] = "Wählt einen Modifikator aus, um die Benutzung von Bodenreittieren zu erzwingen."
+L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = "Wählt einen Modifikator aus, der die Benutzung von Bodenreittieren, auch in Flugzonen, erzwingt."
 L["Squire2"] = "Squire2"
 L["Toggle spellbook"] = "Zauberbuch"
 L["Use %s"] = "%s benutzen"
 L["Use Squire2"] = "Squire2 benutzen"
+L["When already in a vehicle, what should Squire2 do ?"] = "Was soll Squire2 tun, wenn du bereits in einem Fahrzeug bist?"
+L["When already on a mount, what should Squire2 do ?"] = "Was soll Squire2 tun, wenn du bereits auf einem Reittier sitzt?"
+L["When shapeshifted, what should Squire2 do ?"] = "Was soll Squire2 tun, wenn du bereits die Gestalt gewechselt hast?"
+L["When shapeshifted:"] = "Wenn Gestalt gewechselt:"
 
 ------------------------ esMX ------------------------
 -- no translation
@@ -143,12 +173,10 @@ L["Use Squire2"] = "Squire2 benutzen"
 
 ------------------------ zhTW ------------------------
 elseif locale == 'zhTW' then
-L["... but not when flying"] = "...除了飛行時"
 L["Action overrides"] = "無效動作"
 L["Any"] = "任何"
 L["Bindings"] = "按鍵綁定"
 L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = "當飛行時不取消坐騎/離開載具/取消變形"
-L["Check this to dismount, exit vehicle or cancel shapeshift resp. when on a mount, in a vehicle or shapeshifted."] = "勾選以離開現有坐騎,載具或取消變形"
 L["Check this to let Squire2 use this mount or spell."] = "勾選使用此坐騎或法術"
 L["Combat action"] = "戰鬥中動作"
 L["Create the Squire2 macro."] = "產生Squire2巨集"
@@ -156,10 +184,9 @@ L["Define the action to use in combat instead of anything Squire2 might try."] =
 L["Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available."] = "設定移動中所使用的動作以取代任何Squire2會嘗試使用的動作.如果戰鬥中無其他可用選擇將會使用此設定."
 L["Dismount"] = "離開坐騎"
 L["Dismount modifier"] = "離開坐騎組合鍵"
-L["Dismount/exit vehicle/cancel shapeshift"] = "離開坐騎/離開載具/取消變形"
 L["Drag and drop an action or right-click to clear."] = "拖曳設置一個動作或右鍵清除"
 L["Ground modifier"] = "地面組合鍵"
-L["Infinite recursion is bad !"] = "Infinite recursion is bad !"
+L["Infinite recursion is bad !"] = "Infinite recursion is bad !" -- Needs review
 L["Macro"] = "巨集"
 L["Moving action"] = "移動時動作"
 L["None"] = "無"
@@ -167,14 +194,38 @@ L["Right mouse button"] = "滑鼠右鍵"
 L["Select a binding to dismount."] = "選擇一個按鍵設置來離開坐騎"
 L["Select a binding to use Squire2 without a macro."] = "選擇一個按鍵設置來使用Squire2而不使用巨集"
 L["Select a modifier to enforce dismounting, even mid-air."] = "選擇一個組合鍵以強制離開坐騎,即使是在空中."
-L["Select a modifier to enforce the use of a ground mount."] = "選擇一個組合鍵來強制使用地面坐騎"
 L["Squire2"] = "Squire2"
 L["Toggle spellbook"] = "切換法術書"
 L["Use %s"] = "使用%s"
 L["Use Squire2"] = "使用Squire2"
 
 ------------------------ zhCN ------------------------
--- no translation
+elseif locale == 'zhCN' then
+L["Action overrides"] = "无效动作"
+L["Any"] = "任何"
+L["Bindings"] = "按键绑定"
+L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = "当飞行时不取消坐骑/离开载具/取消变形"
+L["Check this to let Squire2 use this mount or spell."] = "勾选使用此坐骑或法术"
+L["Combat action"] = "战斗中动作"
+L["Create the Squire2 macro."] = "产生Squire2宏"
+L["Define the action to use in combat instead of anything Squire2 might try."] = "设定战斗中所使用的动作以取代任何Squire2会尝试使用的动作"
+L["Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available."] = "设定移动中所使用的动作以取代任何Squire2会尝试使用的动作.如果战斗中无其它可用选择将会使用此设定."
+L["Dismount"] = "离开坐骑"
+L["Dismount modifier"] = "离开坐骑组合键"
+L["Drag and drop an action or right-click to clear."] = "拖曳设置一个动作或右键清除"
+L["Ground modifier"] = "地面组合键"
+L["Infinite recursion is bad !"] = "Infinite recursion is bad !" -- Needs review
+L["Macro"] = "宏"
+L["Moving action"] = "移动时动作"
+L["None"] = "无"
+L["Right mouse button"] = "鼠标右键"
+L["Select a binding to dismount."] = "选择一个按键设置来离开坐骑"
+L["Select a binding to use Squire2 without a macro."] = "选择一个按键设置来使用Squire2而不使用宏"
+L["Select a modifier to enforce dismounting, even mid-air."] = "选择一个组合键以强制离开坐骑,即使是在空中."
+L["Squire2"] = "Squire2"
+L["Toggle spellbook"] = "切换法术书"
+L["Use %s"] = "使用%s"
+L["Use Squire2"] = "使用Squire2"
 
 ------------------------ koKR ------------------------
 -- no translation
