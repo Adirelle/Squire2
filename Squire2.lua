@@ -57,6 +57,8 @@ addon.ACTION_NOOP, addon.ACTION_SMOOTH, addon.ACTION_TOGGLE = ACTION_NOOP, ACTIO
 
 local macroTemplate = ""
 local noopConditions = ""
+local cancelTravelFormCondition
+local cancelFormCondition
 
 local modifierConds = {
 	any = "mod",
@@ -78,12 +80,16 @@ local DEFAULTS = {
 		ifMounted = GetCVarBool('autoDismount') and ACTION_SMOOTH or ACTION_NOOP,
 		ifShapeshifted = GetCVarBool('autoUnshift') and ACTION_SMOOTH or ACTION_NOOP,
 		secureFlight = not GetCVarBool('autoDismountFlying'),
+		travelFormsAsMounts = false,
 	},
 	char = { mounts = { ['*'] = true } },
 }
 
 local eventHandler = CreateFrame("Frame")
 eventHandler:SetScript('OnEvent', function(_, event, ...) return addon[event](addon, event, ...) end)
+
+addon.shapeshiftForms = {}
+addon.travelForms = {}
 
 function addon:ADDON_LOADED(_, name)
 	if name ~= addonName then return end
@@ -122,8 +128,6 @@ eventHandler:RegisterEvent('ADDON_LOADED')
 function addon:Initialize()
 	if not self:CanDoSecureStuff('Initialize') then return end
 
-	self.canShapeshift = false
-
 	local button = CreateFrame("Button", "Squire2Button", nil, "SecureActionButtonTemplate")
 	button:RegisterForClicks("AnyUp")
 	button:SetScript("PreClick", self.ButtonPreClick)
@@ -138,7 +142,10 @@ function addon:Initialize()
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
-	eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
+
+	if self.UPDATE_SHAPESHIFT_FORMS then
+		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
+	end
 
 	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
 
@@ -358,17 +365,8 @@ function addon:SPELLS_CHANGED(event)
 		tinsert(addon.mountSpells, RUNNING_WILD_ID)
 	end
 
-	self:UPDATE_SHAPESHIFT_FORMS(event)
-end
-
-function addon:UPDATE_SHAPESHIFT_FORMS(event)
-	local canShapeshift = (playerClass == "DRUID" or playerClass == "SHAMAN") and GetNumShapeshiftForms() > 0
-	if canShapeshift and self.Post_UPDATE_SHAPESHIFT_FORMS then
-		self:Post_UPDATE_SHAPESHIFT_FORMS(event)
-	end
-	if canShapeshift ~= self.canShapeshift then
-		self.canShapeshift = canShapeshift
-		self:UpdateMacroTemplate()
+	if self.UPDATE_SHAPESHIFT_FORMS then
+		self:UPDATE_SHAPESHIFT_FORMS(event)
 	end
 end
 
@@ -431,7 +429,26 @@ local function AddCancelCommand(setting, command, condition, forceDismountCondit
 	end
 end
 
+function addon:UpdateFormFlags()
+	local travelForms, shapeshiftForms = self.travelForms, self.shapeshiftForms
+	self.hasShapeshiftForms = #shapeshiftForms > 0
+	self.hasTravelForms = #travelForms > 0
+	if addon.db.profile.travelFormsAsMounts then
+		cancelTravelFormCondition = self.hasTravelForms and ("form:"..table.concat(travelForms, "/")) or nil
+		cancelFormCondition = self.hasShapeshiftForms and ("form:"..table.concat(shapeshiftForms, "/")) or nil
+	else
+		if self.hasTravelForms or self.hasShapeshiftForms then
+			self.hasShapeshiftForms = true
+			cancelFormCondition = "form"
+		else
+			cancelFormCondition = nil
+		end
+		cancelTravelFormCondition = nil
+	end
+end
+
 function addon:UpdateMacroTemplate()
+	self:UpdateFormFlags()
 	local pref = addon.db.profile
 	local dismountModifier = pref.dismountModifier and modifierConds[pref.dismountModifier]
 	local forceDismountCondition = dismountModifier and (",no"..dismountModifier) or ""
@@ -442,10 +459,13 @@ function addon:UpdateMacroTemplate()
 		tinsert(stopConds, "[flying"..forceDismountCondition.."]")
 	end
 	tinsert(cmds, "%ACTION%")
-	if self.canShapeshift then
-		AddCancelCommand(pref.ifShapeshifted, "/cancelform", "form", forceDismountCondition)
+	if cancelFormCondition then
+		AddCancelCommand(pref.ifShapeshifted, "/cancelform", cancelFormCondition, forceDismountCondition)
 	end
 	AddCancelCommand(pref.ifMounted, "/dismount", "mounted", forceDismountCondition)
+	if cancelTravelFormCondition then
+		AddCancelCommand(pref.ifMounted, "/cancelform", cancelTravelFormCondition, forceDismountCondition)
+	end
 	AddCancelCommand(pref.ifInVehicle, "/leavevehicle", "@vehicle,exists", forceDismountCondition)
 	if #stopConds > 0 then
 		tinsert(cmds, 1, "/stopmacro "..tconcat(stopConds, ""))
@@ -459,10 +479,7 @@ end
 
 function addon:UpdateDismountAction()
 	if not self:CanDoSecureStuff('UpdateDismountAction') then return end
-	local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]"
-	if self.canShapeshift then
-		dismountMacro = dismountMacro .. "\n/cancelform [form]"
-	end
+	local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]\n/cancelform [form]"
 	self:SetButtonAction(self.button, 'macrotext', dismountMacro, "-dismount")
 end
 
@@ -523,7 +540,7 @@ end
 function addon:BuildAction(clickedButton)
 	wipe(cmds)
 	lastCmdIndex = nil
-	
+
 	local actionType, actionData
 	local isMoving = GetUnitSpeed("player") > 0 or IsFalling()
 
@@ -632,9 +649,28 @@ if playerClass == 'DRUID' then
 	}
 	addon.mountSpells = movingForms
 
-	function addon:Post_UPDATE_SHAPESHIFT_FORMS()
+	local t = {}
+	function addon:UPDATE_SHAPESHIFT_FORMS()
 		flyingForm = knownSpells[40120] and 40120 or 33943
 		movingForms[3] = flyingForm
+
+		wipe(t)
+		for i, id in ipairs(movingForms) do
+			t[spellNames[id]] = true
+		end
+
+		wipe(self.shapeshiftForms)
+		wipe(self.travelForms)
+		for index = 1, GetNumShapeshiftForms() do
+			local _, name = GetShapeshiftFormInfo(index)
+			if t[name] then
+				tinsert(self.travelForms, index)
+			else
+				tinsert(self.shapeshiftForms, index)
+			end
+		end
+
+		self:UpdateMacroTemplate()
 	end
 
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
@@ -654,6 +690,14 @@ if playerClass == 'DRUID' then
 elseif playerClass == 'SHAMAN' then
 
 	addon.mountSpells = { 2645 } -- Ghost Wolf
+
+	function addon:UPDATE_SHAPESHIFT_FORMS()
+		if knownSpells[2645] and #self.travelForms == 0 then
+			tinsert(self.travelForms, 1)
+			self:UpdateMacroTemplate()
+		end
+	end
+
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if mountType == GROUND and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
 			return 'spell', addon.db.char.mounts[2645] and knownSpells[2645] -- Ghost Wolf

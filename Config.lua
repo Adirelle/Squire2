@@ -367,7 +367,7 @@ function addon.GetOptions()
 						[ACTION_SMOOTH] = L["Cancel shapeshift and continue."],
 						[ACTION_TOGGLE] = L["Cancel shapeshift only."],
 					},
-					hidden = function() return not addon.canShapeshift end,
+					hidden = function() return not addon.hasShapeshiftForms end,
 					order = 46,
 				},
 				ifInVehicle = {
@@ -387,6 +387,13 @@ function addon.GetOptions()
 					type = 'toggle',
 					width = 'full',
 					order = 50,
+				},
+				travelFormsAsMounts = {
+					name = L['Travel forms as mount'],
+					desc = L['Treat travel forms as if they were mounts with regard to dismount settings.'],
+					type = 'toggle',
+					hidden = function() return not addon.hasTravelForms end,
+					order = 52,
 				},
 				_actions = {
 					name = L['Action overrides'],
