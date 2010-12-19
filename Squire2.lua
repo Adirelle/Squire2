@@ -433,17 +433,19 @@ function addon:UpdateFormFlags()
 	local travelForms, shapeshiftForms = self.travelForms, self.shapeshiftForms
 	self.hasShapeshiftForms = #shapeshiftForms > 0
 	self.hasTravelForms = #travelForms > 0
+	cancelTravelFormCondition, cancelFormCondition = nil, nil
 	if addon.db.profile.travelFormsAsMounts then
-		cancelTravelFormCondition = self.hasTravelForms and ("form:"..table.concat(travelForms, "/")) or nil
-		cancelFormCondition = self.hasShapeshiftForms and ("form:"..table.concat(shapeshiftForms, "/")) or nil
+		if self.hasTravelForms then
+			cancelTravelFormCondition = "form:"..table.concat(travelForms, "/")
+		end
+		if self.hasShapeshiftForms then
+			cancelFormCondition = "form:"..table.concat(shapeshiftForms, "/")
+		end
 	else
 		if self.hasTravelForms or self.hasShapeshiftForms then
 			self.hasShapeshiftForms = true
 			cancelFormCondition = "form"
-		else
-			cancelFormCondition = nil
 		end
-		cancelTravelFormCondition = nil
 	end
 end
 
@@ -479,7 +481,10 @@ end
 
 function addon:UpdateDismountAction()
 	if not self:CanDoSecureStuff('UpdateDismountAction') then return end
-	local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]\n/cancelform [form]"
+	local dismountMacro = "/dismount [mounted]\n/leavevehicle [@vehicle,exists]"
+	if cancelTravelFormCondition or cancelFormCondition then
+		dismountMacro = dismountMacro .. "\n/cancelform "..(cancelTravelFormCondition or cancelFormCondition)
+	end
 	self:SetButtonAction(self.button, 'macrotext', dismountMacro, "-dismount")
 end
 
