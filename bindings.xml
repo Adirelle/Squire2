@@ -2,7 +2,7 @@
   <Binding name="CLICK Squire2Button:LeftButton" header="SQUIRE2">
     -- Do the job !
   </Binding>
-  <Binding name="CLICK Squire2Button:dismount" header="SQUIRE2">
+  <Binding name="CLICK Squire2Button:dismount">
     -- Do the job !
   </Binding>
 </Bindings>
