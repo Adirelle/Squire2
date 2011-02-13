@@ -77,9 +77,9 @@ local DEFAULTS = {
 		groundModifier = "any",
 		dismountModifier = "none",
 		ifInVehicle = ACTION_NOOP,
-		ifMounted = GetCVarBool('autoDismount') and ACTION_SMOOTH or ACTION_NOOP,
-		ifShapeshifted = GetCVarBool('autoUnshift') and ACTION_SMOOTH or ACTION_NOOP,
-		secureFlight = not GetCVarBool('autoDismountFlying'),
+		ifMounted = ACTION_SMOOTH,
+		ifShapeshifted = ACTION_NOOP,
+		secureFlight = true,
 		travelFormsAsMounts = false,
 	},
 	char = { mounts = { ['*'] = true } },
@@ -106,18 +106,6 @@ function addon:ADDON_LOADED(_, name)
 	end
 
 	local profile = self.db.profile
-
-	-- Upgrade from previous database version
-	if profile.autoDismount then
-		profile.autoDismount = nil
-		profile.ifMounted = ACTION_TOGGLE
-		profile.ifShapeshifted = ACTION_TOGGLE
-		profile.ifInVehicle = ACTION_TOGGLE
-	end
-	if profile.safeDismount then
-		profile.safeDismount = nil
-		profile.secureFlight = true
-	end
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
 
