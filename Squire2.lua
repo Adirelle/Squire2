@@ -674,7 +674,7 @@ if playerClass == 'DRUID' then
 		elseif mountType == GROUND then
 			if isOutdoors and addon.db.char.mounts[783] and knownSpells[783] then
 				return 'spell', 783 -- Travel Form
-			elseif select(5, GetTalentInfo(2, 6)) == 2 then -- Feral Swiftness
+			elseif select(5, GetTalentInfo(2, 1)) > 0 then -- Feral Swiftness
 				return 'spell', knownSpells[768] -- Cat Form
 			end
 		end
