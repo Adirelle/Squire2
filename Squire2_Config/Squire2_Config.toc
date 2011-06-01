@@ -1,4 +1,4 @@
-## Interface: 40000
+## Interface: 40100
 
 ## Title: Squire2 Config
 ## Notes: Squire2 configuration interface.
