@@ -629,10 +629,12 @@ function addon:ExploreActions(groundOnly, isMoving, isOutdoors, primary, seconda
 			return actionType, actionData
 		end
 	end
+	--[[
 	if not isOutdoors then
 		Debug('ExploreActions, trying outdoors')
 		return self:ExploreActions(groundOnly, isMoving, true, primary, secondary, tertiary)
 	end
+	--]]
 end
 
 ----------------------------------------------
