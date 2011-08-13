@@ -561,7 +561,14 @@ function addon:BuildAction(clickedButton)
 		end
 	else
 		local primary, secondary, tertiary = LibMounts:GetCurrentMountType()
-		actionType, actionData = self:ExploreActions(groundOnly, isMoving, IsOutdoors(), primary or GROUND, secondary, tertiary)
+		if not primary then
+			if IsSwimming() then
+				primary, secondary = WATER, GROUND
+			else
+				primary = GROUND
+			end
+		end
+		actionType, actionData = self:ExploreActions(groundOnly, isMoving, IsOutdoors(), primary, secondary, tertiary)
 	end
 	local mainCmd, mainArg = self:GetMacroCommand(actionType, actionData)
 	AddActionCommand(mainCmd, "", mainArg)
