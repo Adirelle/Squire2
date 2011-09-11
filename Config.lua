@@ -303,6 +303,12 @@ function addon.GetOptions()
 					func = function() ToggleSpellBook(BOOKTYPE_MOUNT) end,
 					order = 15,
 				},
+				restrictGroundMounts = {
+					name = L['Strict ground mounts'],
+					desc = L['Flying mounts can be used in non-fyling area. Check this box to ignore them and use strictly ground mounts.'],
+					type = 'toggle',
+					order = 16,
+				},
 				_bindings = {
 					name = L["Bindings"],
 					type = 'header',
