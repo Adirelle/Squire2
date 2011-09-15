@@ -176,7 +176,25 @@ L["When shapeshifted:"] = "Wenn Gestalt gewechselt:"
 -- no translation
 
 ------------------------ ruRU ------------------------
--- no translation
+elseif locale == 'ruRU' then
+L["Bindings"] = "Бинды" -- Needs review
+L["Combat action"] = "Действие в бою" -- Needs review
+L["Create the Squire2 macro."] = "Создать макрос Squire2" -- Needs review
+L["Dismount"] = "Слезть" -- Needs review
+L["Dismount and continue."] = "Слезть и продолжить." -- Needs review
+L["Dismount only."] = "Только слезть." -- Needs review
+L["Do nothing."] = "Ничего не делать." -- Needs review
+L["In a vehicle:"] = "В машине:" -- Needs review
+L["Leave the vehicle."] = "Оставить машину." -- Needs review
+L["Macro"] = "Макрос" -- Needs review
+L["None"] = "Ничего" -- Needs review
+L["On a mount:"] = "На маунте:" -- Needs review
+L["Right mouse button"] = "Правая кнопка мыши" -- Needs review
+L["Squire2"] = "Squire2" -- Needs review
+L["Use %s"] = "Использовать %s" -- Needs review
+L["Use Squire2"] = "Использовать Squire2" -- Needs review
+L["When already in a vehicle, what should Squire2 do ?"] = "Когда вы уже на машине, что должен делать Squire2?" -- Needs review
+L["When already on a mount, what should Squire2 do ?"] = "Когда вы уже на маунте, что должен делать Squire2?" -- Needs review
 
 ------------------------ esES ------------------------
 -- no translation
