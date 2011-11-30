@@ -10,6 +10,7 @@ local ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE = addon.ACTION_NOOP, addon.ACTIO
 
 local AceConfigDialog = LibStub('AceConfigDialog-3.0')
 
+local LibMounts = LibStub("LibMounts-1.0")
 
 local checkbuttons = {}
 local spellbuttons = {}
@@ -71,7 +72,15 @@ function addon:SpellBook_UpdateCompanionsFrame()
 	for i, checkbutton in ipairs(checkbuttons) do
 		local id = checkbutton:GetSpellID()
 		if id then
-			checkbutton:SetChecked(self.db.char.mounts[id])
+			local ground, air, water = LibMounts:GetMountInfo(id)
+			checkbutton.knownMount = ground or air or water
+			if checkbutton.knownMount then
+				checkbutton:Enable()
+				checkbutton:SetChecked(self.db.char.mounts[id])
+			else
+				checkbutton:Disable()
+				checkbutton:SetChecked(false)
+			end
 			checkbutton:Show()
 		else
 			checkbutton:Hide()
@@ -97,8 +106,12 @@ local function CheckButton_OnEnter(self)
 		GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
 	end
 	GameTooltip:ClearLines()
-	GameTooltip:AddLine(format(L["Use %s"], GetSpellInfo(self:GetSpellID())),1,1,1)
-	GameTooltip:AddLine(L["Check this to let Squire2 use this mount or spell."], 0.1, 1, 0.1)
+	if self.knownMount then
+		GameTooltip:AddLine(format(L["Use %s"], GetSpellInfo(self:GetSpellID())),1,1,1)
+		GameTooltip:AddLine(L["Check this to let Squire2 use this mount or spell."], 0.1, 1, 0.1)
+	else
+		GameTooltip:AddLine(L["This mount is not listed by LibMounts-1.0. Squire2 cannot use it."], 0.1, 1, 0.1)
+	end
 	GameTooltip:Show()
 end
 
@@ -119,6 +132,7 @@ function CheckButton_Create(button)
 	checkbutton:SetScript('OnClick', CheckButton_OnClick)
 	checkbutton:SetScript('OnEnter', CheckButton_OnEnter)
 	checkbutton:SetScript('OnLeave', CheckButton_OnLeave)
+	checkbutton:SetMotionScriptsWhileDisabled(true)
 	checkbutton.GetSpellID = CheckButton_GetSpellID
 	return checkbutton
 end
