@@ -18,7 +18,9 @@ local CheckButton_Create
 function addon:InitializeConfig()
 	local scrollFrame = MountJournal.ListScrollFrame
 
-	hooksecurefunc('MountJournal_UpdateMountList', function() addon:UpdateMountList() end)
+	local hook = function() addon:UpdateMountList() end
+	hooksecurefunc('MountJournal_UpdateMountList', hook)
+	hooksecurefunc(scrollFrame, 'update', hook)
 
 	for i, button in ipairs(scrollFrame.buttons) do
 		local checkbutton = CheckButton_Create(button)
