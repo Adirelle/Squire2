@@ -2,7 +2,7 @@
 
 ## Title: Squire2
 ## Notes: One-click smart mounting.
-## Author: Adirelle
+## Author: Adirelle, Aelorean
 ## Version: @project-version@
 ## SavedVariables: Squire2DB
 ## X-Date: @project-date-iso@

@@ -2,7 +2,7 @@
 
 ## Title: Squire2 Config
 ## Notes: Squire2 configuration interface.
-## Author: Adirelle
+## Author: Adirelle, Aelorean
 ## Version: @project-version@
 ## X-Date: @project-date-iso@
 ## Dependencies: Squire2, Blizzard_PetJournal

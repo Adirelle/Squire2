@@ -2,6 +2,8 @@ Squire2 helps you making the most of all your mounts and moving spells. It selec
 
 Squire2 is basically Squire rewritten from scratch for 4.0/Cataclysm. I felt the Squire code became unsuitable to handle the several changes to mounts ; both mount features and API have been slightly changed.
 
+Thanks to Aelorean for submitting 5.0.4 patches.
+
 h3. Features
 
 * Can be used as a macro or with a keybinding.

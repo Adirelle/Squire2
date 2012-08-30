@@ -1,7 +1,10 @@
 --[[
 Squire2 - One-click smart mounting.
-Copyright 2010 Adirelle (adirelle@tagada-team.net)
+Copyright 2010-2012 Adirelle (adirelle@gmail.com)
 All rights reserved.
+
+Contributors :
+- Aelorean
 --]]
 
 local addon = Squire2
