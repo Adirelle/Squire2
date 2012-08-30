@@ -14,7 +14,6 @@ local LibMounts = LibStub("LibMounts-1.0")
 local checkbuttons = {}
 local panelButton
 local CheckButton_Create
-local TimeSpellsLastUpdated
 
 function addon:InitializeConfig()
 	local scrollFrame = MountJournal.ListScrollFrame
@@ -40,12 +39,12 @@ function addon:InitializeConfig()
 	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", addon.GetOptions)
 	--AceConfigDialog:SetDefaultSize("Squire2", 600, 500)
 
-	if (showMounts and playerLevel >= 20) then
-		panelButton = CreateFrame("Button", "Squire2ConfigButton", MountJournal, "MagicButtonTemplate") 
-		panelButton:SetText("Squire2") 
-		panelButton:SetSize(90,20)
-		panelButton:SetPoint("TOPRIGHT",-2, -22)
-		panelButton:SetScript('OnClick', function() self:OpenConfig() end)
+	if ((showMounts == 1 and playerLevel >= 20) or #addon.mountSpells > 0) then
+			panelButton = CreateFrame("Button", "Squire2ConfigButton", MountJournal, "MagicButtonTemplate") 
+			panelButton:SetText("Squire2")
+			panelButton:SetSize(90,20)
+			panelButton:SetPoint("TOPRIGHT",-2, -22)
+			panelButton:SetScript('OnClick', function() self:OpenConfig() end)
 	end
 	
 end
