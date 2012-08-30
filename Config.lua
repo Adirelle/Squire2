@@ -12,8 +12,9 @@ local AceConfigDialog = LibStub('AceConfigDialog-3.0')
 local LibMounts = LibStub("LibMounts-1.0")
 
 local checkbuttons = {}
+local spellbuttons = {}
 local panelButton
-local CheckButton_Create
+local CheckButton_Create, SpellButton_Create
 
 function addon:InitializeConfig()
 	local scrollFrame = MountJournal.ListScrollFrame
@@ -33,6 +34,19 @@ function addon:InitializeConfig()
 		if ( index <= numMounts and showMounts == 1 and playerLevel >= 20) then
 				button.checkbutton = CheckButton_Create(button)
 				checkbuttons[i] = button.checkbutton
+		end
+	end
+	
+	if addon.mountSpells then
+		for i, id in ipairs(addon.mountSpells) do
+			local spellbutton = SpellButton_Create(id)
+			if i == 1 then
+				spellbutton:SetPoint("TOPLEFT", MountJournal.MountDisplay, "TOPLEFT", 5, -5)
+			else
+				spellbutton:SetPoint("TOP", spellbuttons[i-1], "BOTTOM", 0, -8)
+			end
+			spellbuttons[i] = spellbutton
+			table.insert(checkbuttons, spellbutton.checkbutton)
 		end
 	end
 	
@@ -105,6 +119,77 @@ function CheckButton_Create(button)
 	checkbutton.GetSpellID = CheckButton_GetSpellID
 	return checkbutton
 end
+
+--------------------------------------------------------------------------------
+-- Shape-Changing Ability Buttons+Checkbuttons
+--------------------------------------------------------------------------------
+
+local function SpellButton_OnEnter(self)
+	if GetCVarBool("UberTooltips") then
+		GameTooltip_SetDefaultAnchor(GameTooltip, self)
+	else
+		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+	end
+	if GameTooltip:SetSpellByID(self.spellID) then
+		self.UpdateTooltip = SpellButton_OnEnter
+	else
+		self.UpdateTooltip = nil
+	end
+		GameTooltip:Show()
+end
+
+local function SpellButton_OnLeave(self)
+	if GameTooltip:GetOwner() == self then
+		GameTooltip:Hide()
+	end
+end
+
+local function SpellButton_OnShow(self)
+	local name, _, texture = GetSpellInfo(self.spellID)
+	local icon, checkbutton = self.icon, self.checkbutton
+	icon:SetTexture(texture)
+	if GetSpellInfo(name) then
+		if not icon:SetDesaturated(false) then
+			icon:SetVertexColor(1, 1, 1)
+		end
+		checkbutton:Show()
+		checkbutton:SetChecked(addon.db.char.mounts[self.spellID])
+		else
+		if not icon:SetDesaturated(true) then
+			icon:SetVertexColor(0.5, 0.5, 0.5)
+		end
+		checkbutton:Hide()
+	end
+end
+
+local function SpellButton_OnDragStart(self)
+	PickupSpell(self.spellID)
+end
+
+function SpellButton_Create(spellID)
+	local self = CreateFrame("Button", nil, MountJournal)
+	self:Hide()
+	self.spellID = spellID
+	self:SetSize(37,37)
+	self:SetScript('OnEnter', SpellButton_OnEnter)
+	self:SetScript('OnLeave', SpellButton_OnLeave)
+	self:SetScript('OnShow', SpellButton_OnShow)
+
+	self:RegisterForDrag("LeftButton", "RightButton")
+	self:SetScript('OnDragStart', SpellButton_OnDragStart)
+
+	local icon = self:CreateTexture()
+	icon:SetAllPoints(self)
+	self.icon = icon
+	self.icon:SetTexture(icon)
+
+	self.checkbutton = CheckButton_Create(self)
+	
+	self:Show()
+	return self
+end
+
+
 
 --------------------------------------------------------------------------------
 -- Key binding handling
