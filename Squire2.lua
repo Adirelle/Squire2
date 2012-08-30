@@ -688,8 +688,6 @@ if playerClass == 'DRUID' then
 		elseif mountType == GROUND then
 			if isOutdoors and addon.db.char.mounts[783] and knownSpells[783] then
 				return 'spell', 783 -- Travel Form
-			elseif select(5, GetTalentInfo(2, 1)) > 0 then -- Feral Swiftness
-				return 'spell', knownSpells[768] -- Cat Form
 			end
 		end
 	end
@@ -706,7 +704,7 @@ elseif playerClass == 'SHAMAN' then
 	end
 
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if mountType == GROUND and (not isMoving or select(5, GetTalentInfo(2, 6)) == 2) then -- Ancestral Swiftness
+		if mountType == GROUND and addon.db.char.mounts[2645] and not isMoving then
 			return 'spell', addon.db.char.mounts[2645] and knownSpells[2645] -- Ghost Wolf
 		end
 	end
