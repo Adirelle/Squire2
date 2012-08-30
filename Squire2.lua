@@ -149,7 +149,7 @@ function addon:Initialize()
 		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
 	end
 
-	hooksecurefunc('SpellBook_UpdateCompanionsFrame', function(...) return self:SpellBook_UpdateCompanionsFrame(...) end)
+	hooksecurefunc('PetJournal_LoadUI', function() self:LoadConfig() end)
 
 	-- Hook UIErrorsFrame_OnEvent to eat errors
 	self.orig_UIErrorsFrame_OnEvent = UIErrorsFrame_OnEvent
@@ -209,7 +209,7 @@ end
 local function NOOP() end
 
 function addon:LoadConfig()
-	self.LoadConfig, self.OpenConfig, self.SpellBook_UpdateCompanionsFrame = NOOP, NOOP, NOOP
+	self.LoadConfig, self.OpenConfig = NOOP, NOOP
 	local success, msg = LoadAddOn('Squire2_Config')
 	assert(success, "Could not load Squire2 configuration module: "..(msg and _G["ADDON_"..msg] or "unknown reason"))
 end
@@ -217,13 +217,6 @@ end
 function addon:OpenConfig()
 	self:LoadConfig()
 	return self:OpenConfig()
-end
-
-function addon:SpellBook_UpdateCompanionsFrame()
-	if SpellBookCompanionsFrame.mode == 'MOUNT' then
-		self:LoadConfig()
-		return self:SpellBook_UpdateCompanionsFrame()
-	end
 end
 
 function addon:ConfigChanged()

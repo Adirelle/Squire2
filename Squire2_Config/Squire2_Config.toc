@@ -5,7 +5,7 @@
 ## Author: Adirelle
 ## Version: @project-version@
 ## X-Date: @project-date-iso@
-## Dependencies: Squire2
+## Dependencies: Squire2, Blizzard_PetJournal
 ## OptionalDeps: AceGUI-3.0-ActionSlotWidgets
 ## LoadOnDemand: 1
 

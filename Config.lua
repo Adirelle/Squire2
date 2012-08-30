@@ -9,69 +9,43 @@ local L, Debug = addon.L, addon.Debug
 local ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE = addon.ACTION_NOOP, addon.ACTION_SMOOTH, addon.ACTION_TOGGLE
 
 local AceConfigDialog = LibStub('AceConfigDialog-3.0')
-
 local LibMounts = LibStub("LibMounts-1.0")
 
 local checkbuttons = {}
-local spellbuttons = {}
 local panelButton
-
-local CheckButton_Create, SpellButton_Create
+local CheckButton_Create
 
 function addon:InitializeConfig()
-	for i = 1, NUM_COMPANIONS_PER_PAGE do
-		checkbuttons[i] = CheckButton_Create(_G["SpellBookCompanionButton"..i])
-	end
-	if addon.mountSpells then
-		for i, id in ipairs(addon.mountSpells) do
-			local spellbutton = SpellButton_Create(id)
-			if i == 1 then
-				spellbutton:SetPoint("TOPLEFT", SpellBookCompanionsModelFrame, "TOPRIGHT", 16, -16)
-			else
-				spellbutton:SetPoint("TOP", spellbuttons[i-1], "BOTTOM", 0, -8)
-			end
-			spellbuttons[i] = spellbutton
-		end
+	local scrollFrame = MountJournal.ListScrollFrame
+
+	hooksecurefunc('MountJournal_UpdateMountList', function() addon:UpdateMountList() end)
+
+	for i, button in ipairs(scrollFrame.buttons) do
+		local checkbutton = CheckButton_Create(button)
+		checkbuttons[i] = checkbutton
 	end
 
 	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", addon.GetOptions)
 	--AceConfigDialog:SetDefaultSize("Squire2", 600, 500)
 
-	panelButton = CreateFrame("Button", "Squire2ConfigButton", SpellBookCompanionsFrame, "UIPanelButtonTemplate")
+	panelButton = CreateFrame("Button", "Squire2ConfigButton", MountJournal, "UIPanelButtonTemplate")
 	panelButton:SetText("Squire2")
-	panelButton:SetSize(panelButton:GetTextWidth()+10, 20)
-
-	panelButton:Hide()
+	panelButton:SetSize(90,20)
+	panelButton:SetPoint("TOPRIGHT", -2, -22)
 	panelButton:SetScript('OnClick', function() self:OpenConfig() end)
+
+	return addon:UpdateMountList()
 end
 
 function addon:OpenConfig()
 	AceConfigDialog:Open("Squire2")
 end
 
-function addon:SpellBook_UpdateCompanionsFrame()
-	if SpellBookCompanionsFrame.mode ~= 'MOUNT' then
-		panelButton:Hide()
-		for i, button in ipairs(checkbuttons) do
-			button:Hide()
-		end
-		for i, button in ipairs(spellbuttons) do
-			button:Hide()
-		end
-		return
-	end
-	panelButton:Show()
-	if Collectinator_ScanButton and Collectinator_ScanButton:IsShown() then
-		panelButton:SetPoint("RIGHT", Collectinator_ScanButton, "LEFT", 2, 0)
-	else
-		panelButton:SetPoint("RIGHT", SpellBookFrameCloseButton, "LEFT", 4, 0)
-	end
-	for i, button in ipairs(spellbuttons) do
-		button:Show()
-	end
-	for i, checkbutton in ipairs(checkbuttons) do
+function addon:UpdateMountList()
+	-- This function is now called every time the MountWindow scrollframe moves/updates.  So, any 'expensive' calls could cause fps lag when scrolling.
+	for _, checkbutton in ipairs(checkbuttons) do
 		local id = checkbutton:GetSpellID()
-		if id then
+		if id and id ~= 0 then
 			local ground, air, water = LibMounts:GetMountInfo(id)
 			checkbutton.knownMount = ground or air or water
 			if checkbutton.knownMount then
@@ -81,8 +55,10 @@ function addon:SpellBook_UpdateCompanionsFrame()
 				checkbutton:Disable()
 				checkbutton:SetChecked(false)
 			end
-			checkbutton:Show()
-		else
+			if not checkbutton:IsShown() then
+				checkbutton:Show()
+			end
+		elseif checkbutton:IsShown() then
 			checkbutton:Hide()
 		end
 	end
@@ -127,81 +103,14 @@ end
 
 function CheckButton_Create(button)
 	local checkbutton = CreateFrame("CheckButton", nil, button, "UICheckButtonTemplate")
-	checkbutton:SetPoint("CENTER", button, "BOTTOMRIGHT", -4, 4)
-	checkbutton:SetScale(0.5)
+	checkbutton:SetPoint("CENTER", button, "BOTTOMRIGHT", -18, 18)
+	checkbutton:SetScale(0.85)
 	checkbutton:SetScript('OnClick', CheckButton_OnClick)
 	checkbutton:SetScript('OnEnter', CheckButton_OnEnter)
 	checkbutton:SetScript('OnLeave', CheckButton_OnLeave)
 	checkbutton:SetMotionScriptsWhileDisabled(true)
 	checkbutton.GetSpellID = CheckButton_GetSpellID
 	return checkbutton
-end
-
---------------------------------------------------------------------------------
--- Spell buttons
---------------------------------------------------------------------------------
-
-local function SpellButton_OnEnter(self)
-	if GetCVarBool("UberTooltips") then
-		GameTooltip_SetDefaultAnchor(GameTooltip, self)
-	else
-		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-	end
-	if GameTooltip:SetSpellByID(self.spellID) then
-		self.UpdateTooltip = SpellButton_OnEnter
-	else
-		self.UpdateTooltip = nil
-	end
-	GameTooltip:Show()
-end
-
-local function SpellButton_OnLeave(self)
-	if GameTooltip:GetOwner() == self then
-		GameTooltip:Hide()
-	end
-end
-
-local function SpellButton_OnShow(self)
-	local name, _, texture = GetSpellInfo(self.spellID)
-	local icon, checkbutton = self.icon, self.checkbutton
-	icon:SetTexture(texture)
-	if GetSpellInfo(name) then
-		if not icon:SetDesaturated(false) then
-			icon:SetVertexColor(1, 1, 1)
-		end
-		checkbutton:Show()
-		checkbutton:SetChecked(addon.db.char.mounts[self.spellID])
-	else
-		if not icon:SetDesaturated(true) then
-			icon:SetVertexColor(0.5, 0.5, 0.5)
-		end
-		checkbutton:Hide()
-	end
-end
-
-local function SpellButton_OnDragStart(self)
-	PickupSpell(self.spellID)
-end
-
-function SpellButton_Create(spellID)
-	local self = CreateFrame("Button", nil, SpellBookCompanionsFrame)
-	self:Hide()
-	self.spellID = spellID
-	self:SetSize(37,37)
-	self:SetScript('OnEnter', SpellButton_OnEnter)
-	self:SetScript('OnLeave', SpellButton_OnLeave)
-	self:SetScript('OnShow', SpellButton_OnShow)
-
-	self:RegisterForDrag("LeftButton", "RightButton")
-	self:SetScript('OnDragStart', SpellButton_OnDragStart)
-
-	local icon = self:CreateTexture()
-	icon:SetAllPoints(self)
-	self.icon = icon
-
-	self.checkbutton = CheckButton_Create(self)
-
-	return self
 end
 
 --------------------------------------------------------------------------------
@@ -312,9 +221,9 @@ function addon.GetOptions()
 					order = 10,
 				},
 				togleMountSpellbook = {
-					name = L['Toggle spellbook'],
+					name = L['Toggle Mount Journal'],
 					type = 'execute',
-					func = function() ToggleSpellBook(BOOKTYPE_MOUNT) end,
+					func = function() ToggleFrame(MountJournal:GetParent()) end,
 					order = 15,
 				},
 				restrictGroundMounts = {
