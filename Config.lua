@@ -12,8 +12,9 @@ local AceConfigDialog = LibStub('AceConfigDialog-3.0')
 local LibMounts = LibStub("LibMounts-1.0")
 
 local checkbuttons = {}
+local spellbuttons = {}
 local panelButton
-local CheckButton_Create
+local CheckButton_Create, SpellButton_Create
 
 function addon:InitializeConfig()
 	local scrollFrame = MountJournal.ListScrollFrame
@@ -23,7 +24,7 @@ function addon:InitializeConfig()
 	hooksecurefunc(scrollFrame, 'update', hook)
 
 	for i, button in ipairs(scrollFrame.buttons) do
-		local checkbutton = CheckButton_Create(button)
+		local checkbutton = CheckButton_Create(button, -18, 18)
 		checkbuttons[i] = checkbutton
 	end
 
@@ -35,6 +36,18 @@ function addon:InitializeConfig()
 	panelButton:SetSize(90,20)
 	panelButton:SetPoint("TOPRIGHT", -2, -22)
 	panelButton:SetScript('OnClick', function() self:OpenConfig() end)
+
+	if addon.mountSpells then
+		for i, id in ipairs(addon.mountSpells) do
+			local spellbutton = SpellButton_Create(id)
+			if i == 1 then
+				spellbutton:SetPoint("BOTTOMLEFT", MountJournal.MountDisplay, "TOPLEFT", 0, 2)
+			else
+				spellbutton:SetPoint("LEFT", spellbuttons[i-1], "RIGHT", 4, 0)
+			end
+			spellbuttons[i] = spellbutton
+		end
+	end
 
 	return addon:UpdateMountList()
 end
@@ -103,9 +116,9 @@ local function CheckButton_GetSpellID(self)
 	return tonumber(self:GetParent().spellID)
 end
 
-function CheckButton_Create(button)
+function CheckButton_Create(button, xOffset, yOffset)
 	local checkbutton = CreateFrame("CheckButton", nil, button, "UICheckButtonTemplate")
-	checkbutton:SetPoint("CENTER", button, "BOTTOMRIGHT", -18, 18)
+	checkbutton:SetPoint("CENTER", button, "BOTTOMRIGHT", xOffset, yOffset)
 	checkbutton:SetScale(0.85)
 	checkbutton:SetScript('OnClick', CheckButton_OnClick)
 	checkbutton:SetScript('OnEnter', CheckButton_OnEnter)
@@ -113,6 +126,77 @@ function CheckButton_Create(button)
 	checkbutton:SetMotionScriptsWhileDisabled(true)
 	checkbutton.GetSpellID = CheckButton_GetSpellID
 	return checkbutton
+end
+
+--------------------------------------------------------------------------------
+-- Shape-Changing Ability Buttons+Checkbuttons
+--------------------------------------------------------------------------------
+
+local function SpellButton_OnEnter(self)
+	if GetCVarBool("UberTooltips") then
+		GameTooltip_SetDefaultAnchor(GameTooltip, self)
+	else
+		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+	end
+	if GameTooltip:SetSpellByID(self.spellID) then
+		self.UpdateTooltip = SpellButton_OnEnter
+	else
+		self.UpdateTooltip = nil
+	end
+		GameTooltip:Show()
+end
+
+local function SpellButton_OnLeave(self)
+	if GameTooltip:GetOwner() == self then
+		GameTooltip:Hide()
+	end
+end
+
+local function SpellButton_OnShow(self)
+	local name, _, texture = GetSpellInfo(self.spellID)
+	local icon, checkbutton = self.icon, self.checkbutton
+	icon:SetTexture(texture)
+	if GetSpellInfo(name) then
+		if not icon:SetDesaturated(false) then
+			icon:SetVertexColor(1, 1, 1)
+		end
+		checkbutton:Show()
+		checkbutton:SetChecked(addon.db.char.mounts[self.spellID])
+		else
+		if not icon:SetDesaturated(true) then
+			icon:SetVertexColor(0.5, 0.5, 0.5)
+		end
+		checkbutton:Hide()
+	end
+end
+
+local function SpellButton_OnDragStart(self)
+	PickupSpell(self.spellID)
+end
+
+function SpellButton_Create(spellID)
+	local self = CreateFrame("Button", nil, MountJournal)
+	self:Hide()
+	self.spellID = spellID
+	self:SetSize(37, 37)
+	self:SetScript('OnEnter', SpellButton_OnEnter)
+	self:SetScript('OnLeave', SpellButton_OnLeave)
+	self:SetScript('OnShow', SpellButton_OnShow)
+
+	self:RegisterForDrag("LeftButton", "RightButton")
+	self:SetScript('OnDragStart', SpellButton_OnDragStart)
+
+	local icon = self:CreateTexture()
+	icon:SetAllPoints(self)
+	self.icon = icon
+	self.icon:SetTexture(icon)
+
+	self.checkbutton = CheckButton_Create(self, -12, 12)
+	self.checkbutton:SetScale(0.5)
+	self.checkbutton.knownMount = true
+
+	self:Show()
+	return self
 end
 
 --------------------------------------------------------------------------------
