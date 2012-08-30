@@ -1,10 +1,14 @@
-## Interface: 40000
+## Interface: 40300
+## X-Curse-Packaged-Version: v1.2.1-1-g6d8e9e2
+## X-Curse-Project-Name: Squire2
+## X-Curse-Project-ID: squire2
+## X-Curse-Repository-ID: wow/squire2/mainline
 
 ## Title: Squire2 Config
 ## Notes: Squire2 configuration interface.
 ## Author: Adirelle
-## Version: @project-version@
-## X-Date: @project-date-iso@
+## Version: v1.2.1-1-g6d8e9e2
+## X-Date: 2011-12-02T07:20:35Z
 ## Dependencies: Squire2
 ## OptionalDeps: AceGUI-3.0-ActionSlotWidgets
 ## LoadOnDemand: 1
@@ -15,5 +19,5 @@
 ..\Squire2\libs\AceGUI-3.0-ActionSlotWidgets\widget.xml
 #@end-no-lib-strip@
 
-..\Squire2\Squire2_Config.lua
+..\Squire2\Config.lua
 

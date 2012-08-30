@@ -1,14 +1,18 @@
-## Interface: 40000
+## Interface: 50001
+## X-Curse-Packaged-Version: v1.2.1-1-g6d8e9e2
+## X-Curse-Project-Name: Squire2
+## X-Curse-Project-ID: squire2
+## X-Curse-Repository-ID: wow/squire2/mainline
+
 
 ## Title: Squire2
 ## Notes: One-click smart mounting.
 ## Author: Adirelle
-## Version: @project-version@
+## Version: v1.2.1-1-g6d8e9e2
 ## SavedVariables: Squire2DB
-## X-Date: @project-date-iso@
-## OptionalDeps: Ace3, LibMounts-1.0, tekDebug
-## LoadManagers: AddonLoader
-## X-LoadOn-Always: delayed
+## X-Date: 2011-12-02T07:20:35Z
+## Dependencies: Blizzard_PetJournal
+## OptionalDeps: Ace3, LibMounts-1.0, AdiDebug
 
 #@no-lib-strip@
 libs\LibStub\LibStub.lua
