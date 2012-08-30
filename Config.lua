@@ -12,7 +12,6 @@ local AceConfigDialog = LibStub('AceConfigDialog-3.0')
 local LibMounts = LibStub("LibMounts-1.0")
 
 local checkbuttons = {}
-local Mounts = {}
 local panelButton
 local CheckButton_Create
 local TimeSpellsLastUpdated
@@ -23,8 +22,6 @@ function addon:InitializeConfig()
 	local offset = HybridScrollFrame_GetOffset(scrollFrame);
 	local numMounts = GetNumCompanions("MOUNT");
 	local playerLevel = UnitLevel("player");
-	local MOUNT_BUTTON_HEIGHT = 46				-- from Blizzard_PetJournal.lua
-	local It = 1
 	
 	local showMounts = 1;
 	if ( numMounts < 1 ) then
@@ -37,7 +34,6 @@ function addon:InitializeConfig()
 		if ( index <= numMounts and showMounts == 1 and playerLevel >= 20) then
 				button.checkbutton = CheckButton_Create(button)
 				checkbuttons[i] = button.checkbutton
-				Mounts[button.spellID] = button
 		end
 	end
 	
