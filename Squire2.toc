@@ -1,4 +1,4 @@
-## Interface: 40300
+## Interface: 50001
 ## X-Curse-Packaged-Version: v1.2.1-1-g6d8e9e2
 ## X-Curse-Project-Name: Squire2
 ## X-Curse-Project-ID: squire2
