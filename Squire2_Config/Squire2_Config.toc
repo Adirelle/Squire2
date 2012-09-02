@@ -5,9 +5,12 @@
 ## Author: Adirelle, Aelorean
 ## Version: @project-version@
 ## X-Date: @project-date-iso@
+## X-Part-Of: Squire2
+
 ## Dependencies: Squire2, Blizzard_PetJournal
 ## OptionalDeps: AceGUI-3.0-ActionSlotWidgets
 ## LoadOnDemand: 1
+## LoadWith: Blizzard_PetJournal
 
 #@no-lib-strip@
 ..\Squire2\libs\AceGUI-3.0\AceGUI-3.0.xml

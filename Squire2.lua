@@ -152,8 +152,6 @@ function addon:Initialize()
 		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
 	end
 
-	hooksecurefunc('PetJournal_LoadUI', function() self:LoadConfig() end)
-
 	-- Hook UIErrorsFrame_OnEvent to eat errors
 	self.orig_UIErrorsFrame_OnEvent = UIErrorsFrame_OnEvent
 	UIErrorsFrame_OnEvent = self.UIErrorsFrame_OnEvent
