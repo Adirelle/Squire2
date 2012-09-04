@@ -55,6 +55,8 @@ do
 end
 
 local RUNNING_WILD_ID = 87840
+local GLYPH_OF_STARS_ID = 114301
+local DRUID_MOONKIN_FORM = 5
 
 -- Unknown at login
 local RUNNING_WILD_NAME
@@ -441,6 +443,18 @@ function addon:UpdateFormFlags()
 			cancelFormCondition = "form"
 		end
 	end
+	
+	-- Check if player is druid is in moonkin form and has Glyph of Stars enabled.  If so, we do not consider them as "shapshifted" at all.
+	if playerClass == 'DRUID' then
+		if (GetShapeshiftForm() == DRUID_MOONKIN_FORM) then
+			for i = 1, NUM_GLYPH_SLOTS do
+				local enabled, glyphType, glyphTooltipIndex, glyphSpellID, icon = GetGlyphSocketInfo(i);
+			 	if ( enabled and glyphSpellID == GLYPH_OF_STARS_ID) then
+					cancelTravelFormCondition, cancelFormCondition = nil, nil
+			 	end
+			end
+		end
+	end
 end
 
 function addon:UpdateMacroTemplate()
@@ -724,7 +738,7 @@ end
 ----------------------------------------------
 -- Debug commands
 ----------------------------------------------
---@alpha@
+--[===[@alpha@
 
 local function tocoloredstring(value)
 	if type(value) == "string" then
@@ -823,4 +837,4 @@ function SlashCmdList.TESTSQUIRE(cmd)
 		end
 	end
 end
---@end-alpha@
+--@end-alpha@]===]
