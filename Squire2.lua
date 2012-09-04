@@ -451,6 +451,7 @@ function addon:UpdateFormFlags()
 				local enabled, glyphType, glyphTooltipIndex, glyphSpellID, icon = GetGlyphSocketInfo(i);
 			 	if ( enabled and glyphSpellID == GLYPH_OF_STARS_ID) then
 					cancelTravelFormCondition, cancelFormCondition = nil, nil
+					break
 			 	end
 			end
 		end
@@ -738,7 +739,7 @@ end
 ----------------------------------------------
 -- Debug commands
 ----------------------------------------------
---[===[@alpha@
+--@alpha@
 
 local function tocoloredstring(value)
 	if type(value) == "string" then
@@ -837,4 +838,4 @@ function SlashCmdList.TESTSQUIRE(cmd)
 		end
 	end
 end
---@end-alpha@]===]
+--@end-alpha@
