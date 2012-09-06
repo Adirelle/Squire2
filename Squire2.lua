@@ -649,18 +649,18 @@ end
 
 if playerClass == 'DRUID' then
 
-	local flyingForm = 33943 -- Flight form
-	local movingForms = {
-		783, -- Travel form
-		1066, -- Aquatic form
-		flyingForm
-	}
+	local CAT_FORM = 768
+	local TRAVEL_FORM = 783
+	local AQUATIC_FORM = 1066
+	local FLYING_FORM = 33943
+
+	local movingForms = { CAT_FORM, TRAVEL_FORM, AQUATIC_FORM, FLYING_FORM }
 	addon.mountSpells = movingForms
 
 	local t = {}
 	function addon:UPDATE_SHAPESHIFT_FORMS()
-		flyingForm = knownSpells[40120] and 40120 or 33943
-		movingForms[3] = flyingForm
+		FLYING_FORM = knownSpells[40120] and 40120 or 33943
+		movingForms[4] = FLYING_FORM
 
 		wipe(t)
 		for i, id in ipairs(movingForms) do
@@ -683,39 +683,45 @@ if playerClass == 'DRUID' then
 
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if mountType == AIR then
-			return 'spell', addon.db.char.mounts[flyingForm] and IsUsableSpell(flyingForm) and knownSpells[flyingForm] -- Any flying form
+			return 'spell', addon.db.char.mounts[FLYING_FORM] and IsUsableSpell(FLYING_FORM) and knownSpells[FLYING_FORM] -- Any flying form
 		elseif mountType == WATER then
-			return 'spell', addon.db.char.mounts[1066] and knownSpells[1066] -- Aquatic Form
+			return 'spell', addon.db.char.mounts[AQUATIC_FORM] and knownSpells[AQUATIC_FORM]
 		elseif mountType == GROUND then
-			if isOutdoors and addon.db.char.mounts[783] and knownSpells[783] then
-				return 'spell', 783 -- Travel Form
+			if isOutdoors and addon.db.char.mounts[TRAVEL_FORM] and knownSpells[TRAVEL_FORM] then
+				return 'spell', TRAVEL_FORM
+			elseif addon.db.char.mounts[CAT_FORM] and knownSpells[CAT_FORM] then
+				return 'spell', knownSpells[CAT_FORM]
 			end
 		end
 	end
 
 elseif playerClass == 'SHAMAN' then
 
-	addon.mountSpells = { 2645 } -- Ghost Wolf
+	local GHOST_WOLF = 2645
+
+	addon.mountSpells = { GHOST_WOLF } -- Ghost Wolf
 
 	function addon:UPDATE_SHAPESHIFT_FORMS()
-		if knownSpells[2645] and #self.travelForms == 0 then
+		if knownSpells[GHOST_WOLF] and #self.travelForms == 0 then
 			tinsert(self.travelForms, 1)
 			self:UpdateMacroTemplate()
 		end
 	end
 
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if mountType == GROUND and addon.db.char.mounts[2645] and not isMoving then
-			return 'spell', addon.db.char.mounts[2645] and knownSpells[2645] -- Ghost Wolf
+		if mountType == GROUND then
+			return 'spell', addon.db.char.mounts[GHOST_WOLF] and knownSpells[GHOST_WOLF]
 		end
 	end
 
 elseif playerClass == 'HUNTER' then
 
-	addon.mountSpells = { 5118 } -- Aspect of the Cheetah
+	local CHEETAH_ASPECT = 5118
+
+	addon.mountSpells = { CHEETAH_ASPECT }
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if mountType == GROUND and addon.db.char.mounts[5118] then
-			return 'spell', addon.db.char.mounts[5118] and knownSpells[5118] -- Aspect of the Cheetah
+		if mountType == GROUND and addon.db.char.mounts[CHEETAH_ASPECT] then
+			return 'spell', addon.db.char.mounts[CHEETAH_ASPECT] and knownSpells[CHEETAH_ASPECT]
 		end
 	end
 
