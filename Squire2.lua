@@ -98,8 +98,8 @@ local DEFAULTS = {
 		secureFlight = true,
 		travelFormsAsMounts = false,
 		restrictGroundMounts = false,
+		mounts = { ['*'] = true },
 	},
-	char = { mounts = { ['*'] = true } },
 }
 
 local eventHandler = CreateFrame("Frame")
@@ -122,7 +122,13 @@ function addon:ADDON_LOADED(_, name)
 		self.db.char.movingAction = nil
 	end
 
-	local profile = self.db.profile
+	-- MoP: moved mount configuration into the profile since mounts are now account-wide
+	if self.db.char.mounts then
+		for spell, enabled in next, self.db.char.mounts do
+			self.db.profile.mounts[spell] = enabled
+		end
+		self.db.char.mounts = nil
+	end
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
 
@@ -391,7 +397,7 @@ function addon:ChooseMount(mountType)
 		if active then
 			mountHistory[id] = time()
 		end
-		if addon.db.char.mounts[id] and IsUsableSpell(id) and mounts[id] then
+		if addon.db.profile.mounts[id] and IsUsableSpell(id) and mounts[id] then
 			local lastTime = (mountHistory[id] or random(0, 1000))
 			if not oldestTime or lastTime < oldestTime then
 				oldestTime, oldestId = lastTime, id
@@ -677,13 +683,13 @@ if playerClass == 'DRUID' then
 
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if mountType == AIR then
-			return 'spell', addon.db.char.mounts[FLYING_FORM] and IsUsableSpell(FLYING_FORM) and knownSpells[FLYING_FORM] -- Any flying form
+			return 'spell', addon.db.profile.mounts[FLYING_FORM] and IsUsableSpell(FLYING_FORM) and knownSpells[FLYING_FORM] -- Any flying form
 		elseif mountType == WATER then
-			return 'spell', addon.db.char.mounts[AQUATIC_FORM] and knownSpells[AQUATIC_FORM]
+			return 'spell', addon.db.profile.mounts[AQUATIC_FORM] and knownSpells[AQUATIC_FORM]
 		elseif mountType == GROUND then
-			if isOutdoors and addon.db.char.mounts[TRAVEL_FORM] and knownSpells[TRAVEL_FORM] then
+			if isOutdoors and addon.db.profile.mounts[TRAVEL_FORM] and knownSpells[TRAVEL_FORM] then
 				return 'spell', TRAVEL_FORM
-			elseif addon.db.char.mounts[CAT_FORM] and knownSpells[CAT_FORM] then
+			elseif addon.db.profile.mounts[CAT_FORM] and knownSpells[CAT_FORM] then
 				return 'spell', knownSpells[CAT_FORM]
 			end
 		end
@@ -704,7 +710,7 @@ elseif playerClass == 'SHAMAN' then
 
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if mountType == GROUND then
-			return 'spell', addon.db.char.mounts[GHOST_WOLF] and knownSpells[GHOST_WOLF]
+			return 'spell', addon.db.profile.mounts[GHOST_WOLF] and knownSpells[GHOST_WOLF]
 		end
 	end
 
@@ -714,8 +720,8 @@ elseif playerClass == 'HUNTER' then
 
 	addon.mountSpells = { CHEETAH_ASPECT }
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if mountType == GROUND and addon.db.char.mounts[CHEETAH_ASPECT] then
-			return 'spell', addon.db.char.mounts[CHEETAH_ASPECT] and knownSpells[CHEETAH_ASPECT]
+		if mountType == GROUND and addon.db.profile.mounts[CHEETAH_ASPECT] then
+			return 'spell', addon.db.profile.mounts[CHEETAH_ASPECT] and knownSpells[CHEETAH_ASPECT]
 		end
 	end
 
@@ -812,13 +818,13 @@ function SlashCmdList.TESTSQUIRE(cmd)
 		for index, id, active in IterateMounts() do
 			if index > 0 then -- Filter out added mounts
 				local ground, air, water = LibMounts:GetMountInfo(id)
-				cprint('  ', GetSpellLink(id), 'active=', not not active, 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id), "type=", 		water and "WATER" or air and "AIR" or ground and "GROUND" or "")
+				cprint('  ', GetSpellLink(id), 'active=', not not active, 'enabled=', not not addon.db.profile.mounts[id], 'usable=', not not IsUsableSpell(id), "type=", 		water and "WATER" or air and "AIR" or ground and "GROUND" or "")
 			end
 		end
 		if addon.mountSpells then
 			cprint('|cffff7700Character spells:|r')
 			for i, id in ipairs(addon.mountSpells) do
-				cprint('  ', GetSpellLink(id), 'known=', not not knownSpells[id], 'enabled=', not not addon.db.char.mounts[id], 'usable=', not not IsUsableSpell(id))
+				cprint('  ', GetSpellLink(id), 'known=', not not knownSpells[id], 'enabled=', not not addon.db.profile.mounts[id], 'usable=', not not IsUsableSpell(id))
 			end
 		end
 	end

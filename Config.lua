@@ -68,7 +68,7 @@ function addon:UpdateMountList()
 			checkbutton.knownMount = ground or air or water
 			if checkbutton.knownMount then
 				checkbutton:Enable()
-				checkbutton:SetChecked(self.db.char.mounts[id])
+				checkbutton:SetChecked(self.db.profile.mounts[id])
 			else
 				checkbutton:Disable()
 				checkbutton:SetChecked(false)
@@ -89,7 +89,7 @@ end
 local function CheckButton_OnClick(self)
 	local id = self:GetSpellID()
 	if id then
-		addon.db.char.mounts[id] = not addon.db.char.mounts[id]
+		addon.db.profile.mounts[id] = not addon.db.profile.mounts[id]
 	end
 end
 
@@ -164,7 +164,7 @@ local function SpellButton_OnShow(self)
 			icon:SetVertexColor(1, 1, 1)
 		end
 		checkbutton:Show()
-		checkbutton:SetChecked(addon.db.char.mounts[self.spellID])
+		checkbutton:SetChecked(addon.db.profile.mounts[self.spellID])
 		else
 		if not icon:SetDesaturated(true) then
 			icon:SetVertexColor(0.5, 0.5, 0.5)
