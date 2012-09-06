@@ -666,6 +666,7 @@ if playerClass == 'DRUID' then
 		for i, id in ipairs(movingForms) do
 			t[spellNames[id]] = true
 		end
+		local moonkin = spellNames[24858] -- Moonkin Form
 
 		wipe(self.shapeshiftForms)
 		wipe(self.travelForms)
@@ -673,7 +674,7 @@ if playerClass == 'DRUID' then
 			local _, name = GetShapeshiftFormInfo(index)
 			if t[name] then
 				tinsert(self.travelForms, index)
-			else
+			elseif name ~= moonkin then
 				tinsert(self.shapeshiftForms, index)
 			end
 		end
