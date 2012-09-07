@@ -46,6 +46,18 @@ local MOUNTS_BY_TYPE = {
 	[LibMounts.VASHJIR] = LibMounts:GetMountList(LibMounts.VASHJIR),
 }
 
+-- List the profession spell and required level for each mount
+local TAILORING_ID = 110426
+local ENGINEERING_ID = 110403
+local PROFESSION_MOUNTS = {
+	-- Flying carpets require Tailoring
+	[61451] = { TAILORING_ID, 300 },
+	[61309] = { TAILORING_ID, 425 },
+	[75596] = { TAILORING_ID, 425 },
+	-- Turbo-Charged Flying Machine requires Engineering
+	[44151] = { ENGINEERING_ID, 375 },
+}
+
 do
 	-- Build the list of strictly ground mounts
 	local ground, air = GROUND_MOUNTS.STRICT, MOUNTS_BY_TYPE[AIR]
@@ -153,6 +165,7 @@ function addon:Initialize()
 	eventHandler:RegisterEvent('COMPANION_UPDATE')
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
+	eventHandler:RegisterEvent('SKILL_LINES_CHANGED')
 
 	if self.UPDATE_SHAPESHIFT_FORMS then
 		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
@@ -309,12 +322,17 @@ end
 -- Mount iterator (required to handle Running Wild)
 ----------------------------------------------
 
+local professionMountCheck
+
 local function mountIterator(num, index)
 	index = index + 1
 	if index == 0 then
 		return index, RUNNING_WILD_ID, not not UnitBuff("player", RUNNING_WILD_NAME)
 	elseif index <= num then
 		local found, _, id, _, active = GetCompanionInfo("MOUNT", index)
+		if PROFESSION_MOUNTS[id] and not professionMountCheck[id] then
+			return mountIterator(num, index)
+		end
 		return index, id, active
 	end
 end
@@ -367,10 +385,42 @@ function addon:SPELLS_CHANGED(event)
 	if self.UPDATE_SHAPESHIFT_FORMS then
 		self:UPDATE_SHAPESHIFT_FORMS(event)
 	end
+
+	self:SKILL_LINES_CHANGED(event)
 end
 
 function addon:PLAYER_ENTERING_WORLD(event)
 	return self:SPELLS_CHANGED(event)
+end
+----------------------------------------------
+-- Profession mounts
+----------------------------------------------
+
+local function checkProfession(index, search)
+	local name, _, rank = GetProfessionInfo(index)
+	return (search == name) and rank
+end
+
+local function getProfessionLevel(name)
+	local first, second = GetProfessions()
+	return checkProfession(first, name) or checkProfession(second, name) or 0
+end
+
+professionMountCheck = setmetatable({}, {
+	__index = function(t, id)
+		local result = false
+		local data = PROFESSION_MOUNTS[id]
+		if data then
+			local profSpell = knownSpells[data[1]]
+			result = profSpell and (getProfessionLevel(profSpell) >= data[2]) or false
+		end
+		t[id] = result
+		return result
+	end
+});
+
+function addon:SKILL_LINES_CHANGED()
+	wipe(professionMountCheck)
 end
 
 ----------------------------------------------
