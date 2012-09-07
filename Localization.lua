@@ -68,7 +68,8 @@ L["Select a modifier to enforce dismounting, even mid-air."] = true
 L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = true
 L["Squire2"] = true
 L["Strict ground mounts"] = true
-L["Toggle spellbook"] = true
+L["This mount is not listed by LibMounts-1.0. Squire2 cannot use it."] = true
+L["Toggle Mount Journal"] = true
 L["Travel forms as mount"] = true
 L["Treat travel forms as if they were mounts with regard to dismount settings."] = true
 L["Use %s"] = true
@@ -125,8 +126,8 @@ L["Use %s"] = "Utiliser %s"
 L["Use Squire2"] = "Utiliser Squire2"
 L["When already in a vehicle, what should Squire2 do ?"] = "Lorsque vous êtes dans un véhicule, que dois faire Squire2 ?"
 L["When already on a mount, what should Squire2 do ?"] = "Lorsque vous êtes déjà sur une monture, que dois faire Squire2 ?"
-L["When shapeshifted, what should Squire2 do ?"] = "Lorsque vous êtes métamorphosé, que dois faire Squire2 ?"
 L["When shapeshifted:"] = "Métamorphosé :"
+L["When shapeshifted, what should Squire2 do ?"] = "Lorsque vous êtes métamorphosé, que dois faire Squire2 ?"
 
 ------------------------ deDE ------------------------
 elseif locale == 'deDE' then
@@ -169,11 +170,54 @@ L["Use %s"] = "%s benutzen"
 L["Use Squire2"] = "Squire2 benutzen"
 L["When already in a vehicle, what should Squire2 do ?"] = "Was soll Squire2 tun, wenn du bereits in einem Fahrzeug bist?"
 L["When already on a mount, what should Squire2 do ?"] = "Was soll Squire2 tun, wenn du bereits auf einem Reittier sitzt?"
-L["When shapeshifted, what should Squire2 do ?"] = "Was soll Squire2 tun, wenn du bereits die Gestalt gewechselt hast?"
 L["When shapeshifted:"] = "Wenn Gestalt gewechselt:"
+L["When shapeshifted, what should Squire2 do ?"] = "Was soll Squire2 tun, wenn du bereits die Gestalt gewechselt hast?"
 
 ------------------------ esMX ------------------------
--- no translation
+elseif locale == 'esMX' then
+L["Action overrides"] = "Acciones predominantes"
+L["Any"] = "Cualquier"
+L["Bindings"] = "Teclados"
+L["Cancel shapeshift and continue."] = "Cancelar forma y continuar"
+L["Cancel shapeshift only."] = "Sólo cancelar forma"
+L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = "Marcar este caja para no desmontar, salir vehículo, o cancelar cambiar de forma en vuelo."
+L["Check this to let Squire2 use this mount or spell."] = "Marcar este caja para permitir a Squire2 a usar este montura or hechizo."
+L["Combat action"] = "Acción en combate"
+L["Create the Squire2 macro."] = "Crear el macro Squire2."
+L["Define the action to use in combat instead of anything Squire2 might try."] = "Seleccionar la acción para usar en combate en vez de los acciones por defecto."
+L["Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available."] = "Seleccionar la acción para usar en movimiento en vez de los acciones por defecto. También se utiliza en combate si ninguna otra acción está disponible."
+L["Dismount"] = "Desmontar"
+L["Dismount and continue."] = "Desmontar y continuar"
+L["Dismount modifier"] = "Modificador para desmontar:"
+L["Dismount only."] = "Sólo desmontar"
+L["Do nothing."] = "No hacer nada"
+L["Drag and drop an action or right-click to clear."] = "Arrastrar y soltar una acción, o haz clic derecha para quitar."
+L["Flying mounts can be used in non-fyling area. Check this box to ignore them and use strictly ground mounts."] = "Monturas voladoras son utilizables en zonas terrestres. Marcar este caja para ignorarlos y sólo usar monturas terrestres en estas zonas."
+L["Ground modifier"] = "Modificador terrestre:"
+L["In a vehicle:"] = "En vehículo:"
+L["Infinite recursion is bad !"] = "¡Recursión infinita es malo!"
+L["Leave the vehicle."] = "Salir del vehículo."
+L["Macro"] = "Macro"
+L["Moving action"] = "Acción en movimiento"
+L["None"] = "Nada"
+L["On a mount:"] = "En montura:"
+L["Right mouse button"] = "Botón derecho de ratón"
+L["Secure flight"] = "Asegurar vuelo"
+L["Select a binding to dismount."] = "Asignar una tecla para desmontar."
+L["Select a binding to use Squire2 without a macro."] = "Asignar una tecla para usar Squire2 sin macro."
+L["Select a modifier to enforce dismounting, even mid-air."] = "Seleccionar un modificador para desmontar sin condiciones, incluso en vuelo."
+L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = "Seleccionar un modificador para usar solamente una montura terrestre, incluso en las zonas donde se permite volar."
+L["Squire2"] = "Squire2"
+L["Strict ground mounts"] = "Sólo monturas terrestres"
+L["Toggle spellbook"] = "Libro de hechizos"
+L["Travel forms as mount"] = "Formas de viaje como monturas"
+L["Treat travel forms as if they were mounts with regard to dismount settings."] = "Usar cambiados de forma de viaje como monturas, con respecto a la configuración de desmontar."
+L["Use %s"] = "Usar %s"
+L["Use Squire2"] = "Usar Squire2"
+L["When already in a vehicle, what should Squire2 do ?"] = "¿Qué debe hacer Squire2 cuando ya estás en un vehículo?"
+L["When already on a mount, what should Squire2 do ?"] = "¿Qué debe hacer Squire2 cuando ya estás en una montura?"
+L["When shapeshifted:"] = "En cambiado de forma:"
+L["When shapeshifted, what should Squire2 do ?"] = "¿Qué debe hacer Squire2 cuando estás en un cambiado de forma?"
 
 ------------------------ ruRU ------------------------
 elseif locale == 'ruRU' then
@@ -197,7 +241,50 @@ L["When already in a vehicle, what should Squire2 do ?"] = "Когда вы уж
 L["When already on a mount, what should Squire2 do ?"] = "Когда вы уже на маунте, что должен делать Squire2?" -- Needs review
 
 ------------------------ esES ------------------------
--- no translation
+elseif locale == 'esES' then
+L["Action overrides"] = "Acciones predominantes"
+L["Any"] = "Cualquier"
+L["Bindings"] = "Teclados"
+L["Cancel shapeshift and continue."] = "Cancelar forma y continuar"
+L["Cancel shapeshift only."] = "Sólo cancelar forma"
+L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = "Marcar este caja para no desmontar, salir vehículo, o cancelar cambiar de forma en vuelo."
+L["Check this to let Squire2 use this mount or spell."] = "Marcar este caja para permitir a Squire2 a usar este montura or hechizo."
+L["Combat action"] = "Acción en combate"
+L["Create the Squire2 macro."] = "Crear el macro Squire2."
+L["Define the action to use in combat instead of anything Squire2 might try."] = "Seleccionar la acción para usar en combate en vez de los acciones por defecto."
+L["Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available."] = "Seleccionar la acción para usar en movimiento en vez de los acciones por defecto. También se utiliza en combate si ninguna otra acción está disponible."
+L["Dismount"] = "Desmontar"
+L["Dismount and continue."] = "Desmontar y continuar"
+L["Dismount modifier"] = "Modificador para desmontar:"
+L["Dismount only."] = "Sólo desmontar"
+L["Do nothing."] = "No hacer nada"
+L["Drag and drop an action or right-click to clear."] = "Arrastrar y soltar una acción, o haz clic derecha para quitar."
+L["Flying mounts can be used in non-fyling area. Check this box to ignore them and use strictly ground mounts."] = "Monturas voladoras son utilizables en zonas terrestres. Marcar este caja para ignorarlos y sólo usar monturas terrestres en estas zonas."
+L["Ground modifier"] = "Modificador terrestre:"
+L["In a vehicle:"] = "En vehículo:"
+L["Infinite recursion is bad !"] = "¡Recursión infinita es malo!"
+L["Leave the vehicle."] = "Salir del vehículo."
+L["Macro"] = "Macro"
+L["Moving action"] = "Acción en movimiento"
+L["None"] = "Nada"
+L["On a mount:"] = "En montura:"
+L["Right mouse button"] = "Botón derecho de ratón"
+L["Secure flight"] = "Asegurar vuelo"
+L["Select a binding to dismount."] = "Asignar una tecla para desmontar."
+L["Select a binding to use Squire2 without a macro."] = "Asignar una tecla para usar Squire2 sin macro."
+L["Select a modifier to enforce dismounting, even mid-air."] = "Seleccionar un modificador para desmontar sin condiciones, incluso en vuelo."
+L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = "Seleccionar un modificador para usar solamente una montura terrestre, incluso en las zonas donde se permite volar."
+L["Squire2"] = "Squire2"
+L["Strict ground mounts"] = "Sólo monturas terrestres"
+L["Toggle spellbook"] = "Libro de hechizos"
+L["Travel forms as mount"] = "Formas de viaje como monturas"
+L["Treat travel forms as if they were mounts with regard to dismount settings."] = "Usar cambiados de forma de viaje como monturas, con respecto a la configuración de desmontar."
+L["Use %s"] = "Usar %s"
+L["Use Squire2"] = "Usar Squire2"
+L["When already in a vehicle, what should Squire2 do ?"] = "¿Qué debe hacer Squire2 cuando ya estás en un vehículo?"
+L["When already on a mount, what should Squire2 do ?"] = "¿Qué debe hacer Squire2 cuando ya estás en una montura?"
+L["When shapeshifted:"] = "En cambiado de forma:"
+L["When shapeshifted, what should Squire2 do ?"] = "¿Qué debe hacer Squire2 cuando estás en un cambiado de forma?"
 
 ------------------------ zhTW ------------------------
 elseif locale == 'zhTW' then
@@ -218,6 +305,7 @@ L["Dismount modifier"] = "離開坐騎組合鍵"
 L["Dismount only."] = "只下坐騎"
 L["Do nothing."] = "什麼都不做"
 L["Drag and drop an action or right-click to clear."] = "拖曳設置一個動作或右鍵清除"
+L["Flying mounts can be used in non-fyling area. Check this box to ignore them and use strictly ground mounts."] = "飛行坐騎可以在禁飛區域使用, 選取此選項以忽略他們並使用陸地坐騎."
 L["Ground modifier"] = "地面組合鍵"
 L["In a vehicle:"] = "在載具上:"
 L["Infinite recursion is bad !"] = "Infinite recursion is bad !" -- Needs review
@@ -233,6 +321,7 @@ L["Select a binding to use Squire2 without a macro."] = "選擇一個按鍵設�
 L["Select a modifier to enforce dismounting, even mid-air."] = "選擇一個組合鍵以強制離開坐騎,即使是在空中."
 L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = "選擇一個組合鍵以強制使用地面坐騎,即使是在可飛行區域"
 L["Squire2"] = "Squire2"
+L["Strict ground mounts"] = "純粹的地面坐騎"
 L["Toggle spellbook"] = "切換法術書"
 L["Travel forms as mount"] = "將旅行型態視做坐騎"
 L["Treat travel forms as if they were mounts with regard to dismount settings."] = "將旅行型態視作為坐騎,並使用相同離開坐騎設定"
@@ -240,14 +329,16 @@ L["Use %s"] = "使用%s"
 L["Use Squire2"] = "使用Squire2"
 L["When already in a vehicle, what should Squire2 do ?"] = "當已經在載具上時,Squire2應該如何?"
 L["When already on a mount, what should Squire2 do ?"] = "當已經在坐騎上時,Squire2應該如何?"
-L["When shapeshifted, what should Squire2 do ?"] = "當變形中,Squire2應該如何?"
 L["When shapeshifted:"] = "當變形中:"
+L["When shapeshifted, what should Squire2 do ?"] = "當變形中,Squire2應該如何?"
 
 ------------------------ zhCN ------------------------
 elseif locale == 'zhCN' then
 L["Action overrides"] = "无效动作"
 L["Any"] = "任何"
 L["Bindings"] = "按键绑定"
+L["Cancel shapeshift and continue."] = "取消变形并继续"
+L["Cancel shapeshift only."] = "仅取消变形"
 L["Check this not to dismount/exit vehicle/cancel shapeshift when flying."] = "当飞行时不取消坐骑/离开载具/取消变形"
 L["Check this to let Squire2 use this mount or spell."] = "勾选使用此坐骑或法术"
 L["Combat action"] = "战斗中动作"
@@ -255,24 +346,50 @@ L["Create the Squire2 macro."] = "产生Squire2宏"
 L["Define the action to use in combat instead of anything Squire2 might try."] = "设定战斗中所使用的动作以取代任何Squire2会尝试使用的动作"
 L["Define the action to use while moving instead of anything Squire2 might try. It will also be used in combat if nothing else is available."] = "设定移动中所使用的动作以取代任何Squire2会尝试使用的动作.如果战斗中无其它可用选择将会使用此设定."
 L["Dismount"] = "离开坐骑"
+L["Dismount and continue."] = "解散坐骑并继续"
 L["Dismount modifier"] = "离开坐骑组合键"
+L["Dismount only."] = "仅解散坐骑"
+L["Do nothing."] = "忽略"
 L["Drag and drop an action or right-click to clear."] = "拖曳设置一个动作或右键清除"
+L["Flying mounts can be used in non-fyling area. Check this box to ignore them and use strictly ground mounts."] = "飞行坐骑能在非飞行区域使用。在框里禁用你不想其被使用的飞行坐骑，你将严格按区域使用坐骑。"
 L["Ground modifier"] = "地面组合键"
-L["Infinite recursion is bad !"] = "Infinite recursion is bad !" -- Needs review
+L["In a vehicle:"] = "正乘坐:"
+L["Infinite recursion is bad !"] = "无限循环出错！"
+L["Leave the vehicle."] = "离开载具"
 L["Macro"] = "宏"
 L["Moving action"] = "移动时动作"
 L["None"] = "无"
+L["On a mount:"] = "正骑乘:"
 L["Right mouse button"] = "鼠标右键"
+L["Secure flight"] = "安全飞行"
 L["Select a binding to dismount."] = "选择一个按键设置来离开坐骑"
 L["Select a binding to use Squire2 without a macro."] = "选择一个按键设置来使用Squire2而不使用宏"
 L["Select a modifier to enforce dismounting, even mid-air."] = "选择一个组合键以强制离开坐骑,即使是在空中."
+L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = "选择一个组合快捷键让你即使在可飞行区域也使用陆地坐骑"
 L["Squire2"] = "Squire2"
+L["Strict ground mounts"] = "仅适用陆地坐骑"
 L["Toggle spellbook"] = "切换法术书"
+L["Travel forms as mount"] = "把旅行形态当做骑乘状态"
+L["Treat travel forms as if they were mounts with regard to dismount settings."] = "将旅行形态视作解散坐骑设置下的陆地坐骑"
 L["Use %s"] = "使用%s"
 L["Use Squire2"] = "使用Squire2"
+L["When already in a vehicle, what should Squire2 do ?"] = "当你已经坐在载具上，你想让 Squire2 做什么？"
+L["When already on a mount, what should Squire2 do ?"] = "当你已经坐在坐骑上，你想让 Squire2 做什么？"
+L["When shapeshifted:"] = "当变形为:"
+L["When shapeshifted, what should Squire2 do ?"] = "当你处于变形形态，你想让 Squire2 做什么？"
 
 ------------------------ koKR ------------------------
 -- no translation
+
+------------------------ ptBR ------------------------
+elseif locale == 'ptBR' then
+L["Dismount"] = "Desmontar" -- Needs review
+L["Dismount and continue."] = "Desmontar e continuar" -- Needs review
+L["Dismount only."] = "Apenas Desmontar" -- Needs review
+L["In a vehicle:"] = "No Veículo:" -- Needs review
+L["Leave the vehicle."] = "Sair do Veículo." -- Needs review
+L["On a mount:"] = "Na Montaria:" -- Needs review
+L["Use %s"] = "Use %s" -- Needs review
 end
 
 -- @noloc]]
