@@ -34,6 +34,18 @@ h4. Other options
 * Combat action: an action to be used in combat. This overrides the internal macro Squire2 uses and thus ignore all clever features.
 * Moving action: an action to be used while moving. It is also used as a default combat action.
 
+h4. Using Squire2 in another macro
+
+You can use Squire2 from another macro with this command:
+
+@/click Squire2Button@
+
+You can even dismount (the same way Squire2 does it) using this command:
+
+@/click Squire2Button dismount@
+
+More details about the @/click@ command are available there : http://www.wowpedia.org/MACRO_click
+
 h3. Differences with Squire
 
 There is no much visible differences from Squire :
