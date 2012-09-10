@@ -483,19 +483,22 @@ function addon:UpdateFormFlags()
 	local travelForms, shapeshiftForms = self.travelForms, self.shapeshiftForms
 	self.hasShapeshiftForms = #shapeshiftForms > 0
 	self.hasTravelForms = #travelForms > 0
-	cancelTravelFormCondition, cancelFormCondition = nil, nil
+	cancelFormCondition = self.hasShapeshiftForms and table.concat(shapeshiftForms, "/") or nil
+	cancelTravelFormCondition = self.hasTravelForms and table.concat(travelForms, "/") or nil
 	if addon.db.profile.travelFormsAsMounts then
-		if self.hasTravelForms then
-			cancelTravelFormCondition = "form:"..table.concat(travelForms, "/")
+		if cancelFormCondition then
+			cancelFormCondition = "form:"..cancelFormCondition
 		end
-		if self.hasShapeshiftForms then
-			cancelFormCondition = "form:"..table.concat(shapeshiftForms, "/")
+		if cancelTravelFormCondition then
+			cancelTravelFormCondition = "form:"..cancelTravelFormCondition
 		end
 	else
-		if self.hasTravelForms or self.hasShapeshiftForms then
-			self.hasShapeshiftForms = true
-			cancelFormCondition = "form"
+		if cancelFormCondition and cancelTravelFormCondition then
+			cancelFormCondition = "form:"..cancelFormCondition.."/"..cancelTravelFormCondition
+		elseif cancelFormCondition or cancelTravelFormCondition then
+			cancelFormCondition = "form:"..(cancelFormCondition or cancelTravelFormCondition)
 		end
+		cancelTravelFormCondition = nil
 	end
 end
 
@@ -722,6 +725,7 @@ if playerClass == 'DRUID' then
 		wipe(self.travelForms)
 		for index = 1, GetNumShapeshiftForms() do
 			local _, name = GetShapeshiftFormInfo(index)
+
 			if t[name] then
 				tinsert(self.travelForms, index)
 			elseif name ~= moonkin then
