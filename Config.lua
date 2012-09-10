@@ -86,10 +86,26 @@ end
 -- Mount checkbuttons
 --------------------------------------------------------------------------------
 
-local function CheckButton_OnClick(self)
-	local id = self:GetSpellID()
-	if id then
-		addon.db.profile.mounts[id] = not addon.db.profile.mounts[id]
+local CheckButton_OnClick
+do
+	local function Enable() return true end
+	local function Disable() return false end
+	local function Toggle(v) return not v end
+
+	function CheckButton_OnClick(self)
+		if IsModifierKeyDown() then
+			local op = (IsShiftKeyDown() and Enable) or (IsControlKeyDown() and Disable) or Toggle
+			for index = 1, GetNumCompanions("MOUNT") do
+				local _, _, id = GetCompanionInfo("MOUNT", index)
+				addon.db.profile.mounts[id] = op(addon.db.profile.mounts[id])
+			end
+			addon:UpdateMountList()
+		else
+			local id = self:GetSpellID()
+			if id then
+				addon.db.profile.mounts[id] = not addon.db.profile.mounts[id]
+			end
+		end
 	end
 end
 
@@ -106,6 +122,9 @@ local function CheckButton_OnEnter(self)
 	else
 		GameTooltip:AddLine(L["This mount is not listed by LibMounts-1.0. Squire2 cannot use it."], 0.1, 1, 0.1)
 	end
+	GameTooltip:AddLine(L["Shift+Click to check them all,"])
+	GameTooltip:AddLine(L["Alt+Click to invert them all,"])
+	GameTooltip:AddLine(L["Ctrl+Click to bring them all and in the darkness bind them."])
 	GameTooltip:Show()
 end
 
