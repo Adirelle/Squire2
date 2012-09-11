@@ -18,3 +18,6 @@ libs\LibMounts-1.0\lib.xml
 Localization.lua
 Squire2.lua
 
+#@debug@
+## Version: DEV
+#@end-debug@

@@ -68,6 +68,7 @@ L["Select a binding to dismount."] = true
 L["Select a binding to use Squire2 without a macro."] = true
 L["Select a modifier to enforce dismounting, even mid-air."] = true
 L["Select a modifier to enforce the use of a ground mount, even in a flyable area."] = true
+L["Settings"] = true
 L["Shift+Click to check them all,"] = true
 L["Squire2"] = true
 L["Strict ground mounts"] = true

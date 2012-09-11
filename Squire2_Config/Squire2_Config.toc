@@ -16,7 +16,11 @@
 ..\Squire2\libs\AceGUI-3.0\AceGUI-3.0.xml
 ..\Squire2\libs\AceConfig-3.0\AceConfig-3.0.xml
 ..\Squire2\libs\AceGUI-3.0-ActionSlotWidgets\widget.xml
+..\Squire2\libs\AceDBOptions-3.0\AceDBOptions-3.0.xml
 #@end-no-lib-strip@
 
 ..\Squire2\Config.lua
 
+#@debug@
+## Version: DEV
+#@end-debug@
