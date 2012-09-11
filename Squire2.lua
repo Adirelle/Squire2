@@ -710,22 +710,25 @@ if playerClass == 'DRUID' then
 	local CAT_FORM = 768
 	local TRAVEL_FORM = 783
 	local AQUATIC_FORM = 1066
+	local MOONKIN_FORM = 24858
 	local FLYING_FORM = 33943
+	local SWIFT_FLYING_FORM = 33943
 	local TREANT_FORM = 114282
 
 	local movingForms = { CAT_FORM, TRAVEL_FORM, AQUATIC_FORM, FLYING_FORM }
+	local flyingForm = FLYING_FORM
 	addon.mountSpells = movingForms
 
 	local t = {}
 	function addon:UPDATE_SHAPESHIFT_FORMS()
-		FLYING_FORM = knownSpells[40120] and 40120 or 33943
-		movingForms[4] = FLYING_FORM
+		flyingForm = knownSpells[SWIFT_FLYING_FORM] and SWIFT_FLYING_FORM or FLYING_FORM
+		movingForms[4] = flyingForm
 
 		wipe(t)
 		for i, id in ipairs(movingForms) do
 			t[spellNames[id]] = true
 		end
-		local moonkin = spellNames[24858] -- Moonkin Form
+		local moonkinForm = spellNames[MOONKIN_FORM]
 		local treantForm = spellNames[TREANT_FORM]
 
 		cancelAura = nil
@@ -738,7 +741,7 @@ if playerClass == 'DRUID' then
 				tinsert(self.travelForms, index)
 			elseif name == treantForm then
 				cancelAura = treantForm
-			elseif name ~= moonkin then
+			elseif name ~= moonkinForm then
 				tinsert(self.shapeshiftForms, index)
 			end
 		end
@@ -748,7 +751,7 @@ if playerClass == 'DRUID' then
 
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if mountType == AIR then
-			return 'spell', addon.db.profile.mounts[FLYING_FORM] and IsUsableSpell(FLYING_FORM) and knownSpells[FLYING_FORM] -- Any flying form
+			return 'spell', addon.db.profile.mounts[flyingForm] and IsUsableSpell(flyingForm) and knownSpells[flyingForm]
 		elseif mountType == WATER then
 			return 'spell', addon.db.profile.mounts[AQUATIC_FORM] and knownSpells[AQUATIC_FORM]
 		elseif mountType == GROUND then
