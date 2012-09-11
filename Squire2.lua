@@ -87,6 +87,7 @@ local macroTemplate = ""
 local noopConditions = ""
 local cancelTravelFormCondition
 local cancelFormCondition
+local cancelAura
 
 local modifierConds = {
 	any = "mod",
@@ -517,6 +518,10 @@ function addon:UpdateMacroTemplate()
 	if cancelFormCondition then
 		AddCancelCommand(pref.ifShapeshifted, "/cancelform", cancelFormCondition, forceDismountCondition)
 	end
+	if cancelAura and pref.ifShapeshifted ~= ACTION_NOOP then
+		-- systematically cancel the aura, since we cannot detect it
+		tinsert(cmds, 1, "/cancelaura "..cancelAura)
+	end
 	AddCancelCommand(pref.ifMounted, "/dismount", "mounted", forceDismountCondition)
 	if cancelTravelFormCondition then
 		AddCancelCommand(pref.ifMounted, "/cancelform", cancelTravelFormCondition, forceDismountCondition)
@@ -706,6 +711,7 @@ if playerClass == 'DRUID' then
 	local TRAVEL_FORM = 783
 	local AQUATIC_FORM = 1066
 	local FLYING_FORM = 33943
+	local TREANT_FORM = 114282
 
 	local movingForms = { CAT_FORM, TRAVEL_FORM, AQUATIC_FORM, FLYING_FORM }
 	addon.mountSpells = movingForms
@@ -720,7 +726,9 @@ if playerClass == 'DRUID' then
 			t[spellNames[id]] = true
 		end
 		local moonkin = spellNames[24858] -- Moonkin Form
+		local treantForm = spellNames[TREANT_FORM]
 
+		cancelAura = nil
 		wipe(self.shapeshiftForms)
 		wipe(self.travelForms)
 		for index = 1, GetNumShapeshiftForms() do
@@ -728,6 +736,8 @@ if playerClass == 'DRUID' then
 
 			if t[name] then
 				tinsert(self.travelForms, index)
+			elseif name == treantForm then
+				cancelAura = treantForm
 			elseif name ~= moonkin then
 				tinsert(self.shapeshiftForms, index)
 			end
