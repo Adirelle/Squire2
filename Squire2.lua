@@ -712,7 +712,7 @@ if playerClass == 'DRUID' then
 	local AQUATIC_FORM = 1066
 	local MOONKIN_FORM = 24858
 	local FLYING_FORM = 33943
-	local SWIFT_FLYING_FORM = 33943
+	local SWIFT_FLYING_FORM = 40120
 	local TREANT_FORM = 114282
 
 	local movingForms = { CAT_FORM, TRAVEL_FORM, AQUATIC_FORM, FLYING_FORM }
