@@ -46,18 +46,6 @@ local MOUNTS_BY_TYPE = {
 	[LibMounts.VASHJIR] = LibMounts:GetMountList(LibMounts.VASHJIR),
 }
 
--- List the profession spell and required level for each mount
-local TAILORING_ID = 110426
-local ENGINEERING_ID = 110403
-local PROFESSION_MOUNTS = {
-	-- Flying carpets require Tailoring
-	[61451] = { TAILORING_ID, 300 },
-	[61309] = { TAILORING_ID, 425 },
-	[75596] = { TAILORING_ID, 425 },
-	-- Turbo-Charged Flying Machine requires Engineering
-	[44151] = { ENGINEERING_ID, 375 },
-}
-
 do
 	-- Build the list of strictly ground mounts
 	local ground, air = GROUND_MOUNTS.STRICT, MOUNTS_BY_TYPE[AIR]
@@ -331,7 +319,7 @@ local function mountIterator(num, index)
 		return index, RUNNING_WILD_ID, not not UnitBuff("player", RUNNING_WILD_NAME)
 	elseif index <= num then
 		local found, _, id, _, active = GetCompanionInfo("MOUNT", index)
-		if PROFESSION_MOUNTS[id] and not professionMountCheck[id] then
+		if not professionMountCheck[id] then
 			return mountIterator(num, index)
 		end
 		return index, id, active
@@ -397,24 +385,9 @@ end
 -- Profession mounts
 ----------------------------------------------
 
-local function checkProfession(index, search)
-	local name, _, rank = GetProfessionInfo(index)
-	return (search == name) and rank
-end
-
-local function getProfessionLevel(name)
-	local first, second = GetProfessions()
-	return checkProfession(first, name) or checkProfession(second, name) or 0
-end
-
 professionMountCheck = setmetatable({}, {
 	__index = function(t, id)
-		local result = false
-		local data = PROFESSION_MOUNTS[id]
-		if data then
-			local profSpell = knownSpells[data[1]]
-			result = profSpell and (getProfessionLevel(profSpell) >= data[2]) or false
-		end
+		local result = LibMounts:GetProfessionRestriction(id)
 		t[id] = result
 		return result
 	end
