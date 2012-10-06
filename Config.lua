@@ -326,18 +326,6 @@ local function ValidateAction(info, value)
 end
 
 --------------------------------------------------------------------------------
--- Handlers of the panel button
---------------------------------------------------------------------------------
-
-function PanelButton_OnHide(self)
-	self:SetText("Squire2 >>")
-	if self.panel then
-		self.panel:Release()
-		self.panel = nil
-	end
-end
-
---------------------------------------------------------------------------------
 -- Options
 --------------------------------------------------------------------------------
 
