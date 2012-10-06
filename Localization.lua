@@ -24,9 +24,10 @@ addon.L = L
 --------------------------------------------------------------------------------
 
 -- %Localization: squire2
--- THE END OF THE FILE IS UPDATED BY A SCRIPT
--- ANY CHANGE BELOW THESES LINES WILL BE LOST
--- CHANGES SHOULD BE MADE USING http://www.wowace.com/addons/squire2/localization/
+-- THE END OF THE FILE IS UPDATED BY https://github.com/Adirelle/wowaceTools/#updatelocalizationphp.
+-- ANY CHANGE BELOW THESES LINES WILL BE LOST.
+-- UPDATE THE TRANSLATIONS AT http://www.wowace.com/addons/squire2/localization/
+-- AND ASK THE AUTHOR TO UPDATE THIS FILE.
 
 -- @noloc[[
 
@@ -77,6 +78,7 @@ L["Toggle Mount Journal"] = true
 L["Travel forms as mount"] = true
 L["Treat travel forms as if they were mounts with regard to dismount settings."] = true
 L["Use %s"] = true
+L["Warning: the following keys are already bound: %s"] = true
 L["When already in a vehicle, what should Squire2 do ?"] = true
 L["When already on a mount, what should Squire2 do ?"] = true
 L["When shapeshifted, what should Squire2 do ?"] = true
