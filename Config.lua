@@ -7,9 +7,48 @@ Contributors :
 - Aelorean
 --]]
 
-local addon = Squire2
+local addon = _G.Squire2
 local L, Debug = addon.L, addon.Debug
 local ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE = addon.ACTION_NOOP, addon.ACTION_SMOOTH, addon.ACTION_TOGGLE
+
+local _G = _G
+local ALT_KEY = _G.ALT_KEY
+local CreateFrame = _G.CreateFrame
+local CTRL_KEY = _G.CTRL_KEY
+local format = _G.format
+local GameTooltip = _G.GameTooltip
+local GameTooltip_SetDefaultAnchor = _G.GameTooltip_SetDefaultAnchor
+local GetAddOnMetadata = _G.GetAddOnMetadata
+local GetBindingAction = _G.GetBindingAction
+local GetBindingKey = _G.GetBindingKey
+local GetBindingText = _G.GetBindingText
+local GetCompanionInfo = _G.GetCompanionInfo
+local GetCurrentBindingSet = _G.GetCurrentBindingSet
+local GetCVarBool = _G.GetCVarBool
+local GetNumCompanions = _G.GetNumCompanions
+local GetSpellInfo = _G.GetSpellInfo
+local hooksecurefunc = _G.hooksecurefunc
+local InCombatLockdown = _G.InCombatLockdown
+local ipairs = _G.ipairs
+local IsControlKeyDown = _G.IsControlKeyDown
+local IsModifierKeyDown = _G.IsModifierKeyDown
+local IsShiftKeyDown = _G.IsShiftKeyDown
+local KEY_UNBOUND_ERROR = _G.KEY_UNBOUND_ERROR
+local pairs = _G.pairs
+local PickupMacro = _G.PickupMacro
+local PickupSpell = _G.PickupSpell
+local print = _G.print
+local SaveBindings = _G.SaveBindings
+local select = _G.select
+local SetBinding = _G.SetBinding
+local SHIFT_KEY = _G.SHIFT_KEY
+local strmatch = _G.strmatch
+local strtrim = _G.strtrim
+local tinsert = _G.tinsert
+local ToggleFrame = _G.ToggleFrame
+local tonumber = _G.tonumber
+local wipe = _G.wipe
+-- GLOBALS: MountJournal
 
 local AceConfigDialog = LibStub('AceConfigDialog-3.0')
 local LibMounts = LibStub("LibMounts-1.0")
