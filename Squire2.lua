@@ -28,7 +28,67 @@ addon.Debug = Debug
 
 local L = addon.L
 
+local _G = _G
+local assert = _G.assert
+local CreateFrame = _G.CreateFrame
+local CreateMacro = _G.CreateMacro
+local EditMacro = _G.EditMacro
+local format = _G.format
+local GetAddOnMetadata = _G.GetAddOnMetadata
+local GetBuildInfo = _G.GetBuildInfo
+local GetCompanionInfo = _G.GetCompanionInfo
+local GetCVarBool = _G.GetCVarBool
+local geterrorhandler = _G.geterrorhandler
+local GetItemInfo = _G.GetItemInfo
+local GetLocale = _G.GetLocale
+local GetMacroIndexByName = _G.GetMacroIndexByName
+local GetMapInfo = _G.GetMapInfo
+local GetNumCompanions = _G.GetNumCompanions
+local GetNumShapeshiftForms = _G.GetNumShapeshiftForms
+local GetShapeshiftFormInfo = _G.GetShapeshiftFormInfo
+local GetSpellInfo = _G.GetSpellInfo
+local GetSpellLink = _G.GetSpellLink
+local GetUnitSpeed = _G.GetUnitSpeed
+local gsub = _G.gsub
+local InCombatLockdown = _G.InCombatLockdown
+local ipairs = _G.ipairs
+local IsFalling = _G.IsFalling
+local IsFlyableArea = _G.IsFlyableArea
+local IsFlying = _G.IsFlying
+local IsLoggedIn = _G.IsLoggedIn
+local IsMounted = _G.IsMounted
+local IsOutdoors = _G.IsOutdoors
+local IsSwimming = _G.IsSwimming
+local IsUsableSpell = _G.IsUsableSpell
+local LoadAddOn = _G.LoadAddOn
+local next = _G.next
+local pairs = _G.pairs
+local print = _G.print
+local random = _G.random
+local select = _G.select
+local setmetatable = _G.setmetatable
+local SlashCmdList = _G.SlashCmdList
+local strjoin = _G.strjoin
+local strlower = _G.strlower
+local strmatch = _G.strmatch
+local strsplit = _G.strsplit
+local strtrim = _G.strtrim
+local tconcat = _G.table.concat
+local time = _G.time
+local tinsert = _G.tinsert
+local tonumber = _G.tonumber
+local tostring = _G.tostring
+local type = _G.type
+local UIErrorsFrame_OnEvent = _G.UIErrorsFrame_OnEvent
+local UnitBuff = _G.UnitBuff
+local UnitClass = _G.UnitClass
+local UnitHasVehicleUI = _G.UnitHasVehicleUI
+local UnitLevel = _G.UnitLevel
+local wipe = _G.wipe
+
 local _, playerClass = UnitClass('player')
+
+local spellNames
 
 local LibMounts, LMversion = LibStub("LibMounts-1.0")
 local AIR, GROUND, WATER = LibMounts.AIR, LibMounts.GROUND, LibMounts.WATER
@@ -61,8 +121,6 @@ local RUNNING_WILD_NAME
 
 -- 0 to only list "normal" mounts, -1 to include Running Wild
 local FIRST_ITERATOR_STEP = 0
-
-local tconcat = table.concat
 
 local ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE = 1, 2, 3
 addon.ACTION_NOOP, addon.ACTION_SMOOTH, addon.ACTION_TOGGLE = ACTION_NOOP, ACTION_SMOOTH, ACTION_TOGGLE
@@ -237,15 +295,15 @@ end
 -- Chat commands and binding labels
 ----------------------------------------------
 
-BINDING_HEADER_SQUIRE2 = "Squire2"
+_G.BINDING_HEADER_SQUIRE2 = "Squire2"
 _G["BINDING_NAME_CLICK Squire2Button:LeftButton"] = L["Use Squire2"]
 _G["BINDING_NAME_CLICK Squire2Button:dismount"] = L["Dismount"]
 
-SLASH_SQUIRE1 = "/squire2"
-SLASH_SQUIRE2 = "/squire"
-SLASH_SQUIRE3 = "/sq"
-SLASH_SQUIRE4 = "/sq2"
-function SlashCmdList.SQUIRE()
+_G.SLASH_SQUIRE1 = "/squire2"
+_G.SLASH_SQUIRE2 = "/squire"
+_G.SLASH_SQUIRE3 = "/sq"
+_G.SLASH_SQUIRE4 = "/sq2"
+function _G.SlashCmdList.SQUIRE()
 	addon:OpenConfig()
 end
 
@@ -334,7 +392,7 @@ end
 -- Known spell cache
 ----------------------------------------------
 
-local spellNames = setmetatable({}, {__index = function(t, id)
+spellNames = setmetatable({}, {__index = function(t, id)
 	local numId = tonumber(id)
 	if numId then
 		local name = GetSpellInfo(numId)
@@ -457,8 +515,8 @@ function addon:UpdateFormFlags()
 	local travelForms, shapeshiftForms = self.travelForms, self.shapeshiftForms
 	self.hasShapeshiftForms = #shapeshiftForms > 0
 	self.hasTravelForms = #travelForms > 0
-	cancelFormCondition = self.hasShapeshiftForms and table.concat(shapeshiftForms, "/") or nil
-	cancelTravelFormCondition = self.hasTravelForms and table.concat(travelForms, "/") or nil
+	cancelFormCondition = self.hasShapeshiftForms and tconcat(shapeshiftForms, "/") or nil
+	cancelTravelFormCondition = self.hasTravelForms and tconcat(travelForms, "/") or nil
 	if addon.db.profile.travelFormsAsMounts then
 		if cancelFormCondition then
 			cancelFormCondition = "form:"..cancelFormCondition
@@ -806,18 +864,18 @@ local function DumpSettings(t, key, value)
 	end
 end
 
-SLASH_TESTSQUIRE1 = "/sq2test"
-function SlashCmdList.TESTSQUIRE(cmd)
+_G.SLASH_TESTSQUIRE1 = "/sq2test"
+function _G.SlashCmdList.TESTSQUIRE(cmd)
 	cmd = strlower(strtrim(tostring(cmd)))
 	cprint('|cffff7700=== Squire2 '..cmd..' ===|r')
 	if cmd == "all" or cmd == "" then
 		cprint("Locale:", GetLocale(), "BuildInfo:", GetBuildInfo())
 		local ehName, ehEnabled = "unknown", "unknown"
-		if BugGrabber then
+		if _G.BugGrabber then
 			ehName, ehEnabled = "BugGrabber", true
-		elseif Swatter then
-			ehName, ehEnabled = "Swatter", type(SwatterData) == "table" and SwatterData.enabled
-		elseif geterrorhandler() == _ERRORMESSAGE then
+		elseif _G.Swatter then
+			ehName, ehEnabled = "Swatter", type(_G.SwatterData) == "table" and _G.SwatterData.enabled
+		elseif geterrorhandler() == _G._ERRORMESSAGE then
 			ehName, ehEnabled = "built-in", GetCVarBool("scriptErrors")
 		end
 		cprint('Error handler:', ehName, 'enabled=', ehEnabled)
