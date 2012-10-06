@@ -161,6 +161,7 @@ local function CheckButton_OnEnter(self)
 	else
 		GameTooltip:AddLine(L["This mount is not listed by LibMounts-1.0. Squire2 cannot use it."], 0.1, 1, 0.1)
 	end
+	GameTooltip:AddLine(format(L["Current Squire2 profile: %s"], addon.db:GetCurrentProfile()), 0.5, 0.5, 0.5)
 	GameTooltip:AddLine(L["Shift+Click to check them all,"])
 	GameTooltip:AddLine(L["Alt+Click to invert them all,"])
 	GameTooltip:AddLine(L["Ctrl+Click to bring them all and in the darkness bind them."])
@@ -204,7 +205,7 @@ local function SpellButton_OnEnter(self)
 	else
 		self.UpdateTooltip = nil
 	end
-		GameTooltip:Show()
+	GameTooltip:Show()
 end
 
 local function SpellButton_OnLeave(self)
