@@ -638,13 +638,6 @@ function addon:BuildAction(clickedButton)
 	local actionType, actionData
 	local isMoving = GetUnitSpeed("player") > 0 or IsFalling()
 
-	-- Add action with ground modifier, if applicable
-	local groundModifier = addon.db.profile.groundModifier and modifierConds[addon.db.profile.groundModifier]
-	if groundModifier then
-		local groundCmd, groundArg = self:GetMacroCommand(self:GetActionForMount(GROUND, isMoving, inCombat, true))
-		AddActionCommand(groundCmd, "["..groundModifier.."]", groundArg)
-	end
-
 	-- Add modified combat actions
 	if clickedButton == "combat" and not addon.db.char.combatAction then
 		local waterCmd, waterArg = self:GetMacroCommand(self:GetActionForMount(WATER, true, true, false))
@@ -669,7 +662,16 @@ function addon:BuildAction(clickedButton)
 				primary = GROUND
 			end
 		end
-		actionType, actionData = self:ExploreActions(groundOnly, isMoving, IsOutdoors(), primary, secondary, tertiary)
+
+		-- Add action with ground modifier, if applicable
+		local groundModifier = addon.db.profile.groundModifier and modifierConds[addon.db.profile.groundModifier]
+		if groundModifier then
+			local groundType, groupData = self:ExploreActions(true, isMoving, IsOutdoors(), primary, secondary, tertiary)
+			local groundCmd, groundArg = self:GetMacroCommand(groundType, groupData)
+			AddActionCommand(groundCmd, "["..groundModifier.."]", groundArg)
+		end
+
+		actionType, actionData = self:ExploreActions(false, isMoving, IsOutdoors(), primary, secondary, tertiary)
 	end
 	local mainCmd, mainArg = self:GetMacroCommand(actionType, actionData)
 	AddActionCommand(mainCmd, "", mainArg)
