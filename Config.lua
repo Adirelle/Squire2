@@ -338,6 +338,46 @@ local modifierList = {
 	rightbutton = L["Right mouse button"],
 }
 
+local CheckBindingModifiers
+do
+	local modifierToPrefix = {
+		any     = { "CTRL-", "ALT-", "SHIFT-" },
+		control = { "CTRL-" },
+		alt     = { "ALT-" },
+		shift   = { "SHIFT-"}
+	}
+	local failures = {}
+
+	local function CheckModifier(binding, key, modifier)
+		if key and modifier and modifierToPrefix[modifier] then
+			for i, prefix in pairs(modifierToPrefix[modifier]) do
+				local action = GetBindingAction(prefix..key)
+				if action and action ~= "" and action ~= binding then
+					local keyName = GetBindingText(prefix..key, "KEY_")
+					local actionName = GetBindingText(action, "BINDING_NAME_")
+					tinsert(failures, keyName.." ("..actionName..")")
+				end
+			end
+		end
+	end
+
+	local function CheckKeyModifiers(binding, ...)
+		for i = 1, select('#', ...) do
+			CheckModifier(binding, select(i, ...), addon.db.profile.groundModifier)
+			CheckModifier(binding, select(i, ...), addon.db.profile.dismountModifier)
+		end
+	end
+
+	function CheckBindingModifiers()
+		wipe(failures)
+		CheckKeyModifiers(SQUIRE2_BINDING, GetBindingKey(SQUIRE2_BINDING))
+		CheckKeyModifiers(DISMOUNT_BINDING, GetBindingKey(DISMOUNT_BINDING))
+		if #failures > 0 then
+			return '|cffff7700'..format(L["Warning: the following keys are already bound: %s"], table.concat(failures, ", "))..'|r';
+		end
+	end
+end
+
 local options
 function addon.GetOptions()
 	if not options then
@@ -410,6 +450,12 @@ function addon.GetOptions()
 							type = 'select',
 							values = modifierList,
 							order = 37,
+						},
+						_bindingCheck = {
+							name = CheckBindingModifiers,
+							type = 'description',
+							order = 39,
+							hidden = function() return not CheckBindingModifiers() end,
 						},
 						_dismount = {
 							name = L['Dismount'],
