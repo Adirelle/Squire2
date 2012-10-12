@@ -93,26 +93,24 @@ local spellNames
 local LibMounts, LMversion = LibStub("LibMounts-1.0")
 local AIR, GROUND, WATER = LibMounts.AIR, LibMounts.GROUND, LibMounts.WATER
 
-local GROUND_MOUNTS = {
-	STRICT = {},
-	ALL = LibMounts:GetMountList(GROUND),
-}
-
-local MOUNTS_BY_TYPE = {
-	[AIR] = LibMounts:GetMountList(AIR),
-	[GROUND] = GROUND_MOUNTS.ALL,
-	[WATER] = LibMounts:GetMountList(WATER),
-	[LibMounts.AHNQIRAJ] = LibMounts:GetMountList(LibMounts.AHNQIRAJ),
-	[LibMounts.VASHJIR] = LibMounts:GetMountList(LibMounts.VASHJIR),
-}
-
-do
-	-- Build the list of strictly ground mounts
-	local ground, air = GROUND_MOUNTS.STRICT, MOUNTS_BY_TYPE[AIR]
-	for id in pairs(GROUND_MOUNTS.ALL) do
-		ground[id] = not air[id]
+local MOUNTS_BY_TYPE = setmetatable({}, {
+	__index = function(self, cat)
+		local mounts
+		if cat == GROUND and addon.db.profile.restrictGroundMounts then
+			mounts = self["GROUND-ONLY"]
+		elseif cat == "GROUND-ONLY" then
+			local air = self[AIR]
+			mounts = {}
+			for id in pairs(LibMounts:GetMountList(GROUND)) do
+				mounts[id] = not air[id]
+			end
+		else
+			mounts = LibMounts:GetMountList(cat)
+		end
+		self[cat] = mounts
+		return mounts
 	end
-end
+})
 
 local RUNNING_WILD_ID = 87840
 
@@ -266,7 +264,7 @@ do
 end
 
 function addon:UpdateGroundMountList()
-	MOUNTS_BY_TYPE[GROUND] = GROUND_MOUNTS[self.db.profile.restrictGroundMounts and "STRICT" or "ALL"]
+	MOUNTS_BY_TYPE[GROUND] = nil
 end
 
 ----------------------------------------------
