@@ -165,10 +165,17 @@ eventHandler:SetScript('OnEvent', function(_, event, ...) return addon[event](ad
 addon.shapeshiftForms = {}
 addon.travelForms = {}
 
-function addon:ADDON_LOADED(_, name)
-	if name ~= addonName then return end
-	eventHandler:UnregisterEvent('ADDON_LOADED')
+function addon:ADDON_LOADED(event, name)
+	if name == addonName then
+		self:Initialize()
+	elseif name == addonName..'_Config' then
+		self:InitializeConfig()
+		eventHandler:UnregisterEvent('ADDON_LOADED')
+	end
+end
+eventHandler:RegisterEvent('ADDON_LOADED')
 
+function addon:Initialize()
 	self.db = LibStub('AceDB-3.0'):New(addonName.."DB", DEFAULTS, true)
 
 	-- Clean up invalid actions because of buggy AceGUI-3.0-SharedMediaWidgets
@@ -189,12 +196,11 @@ function addon:ADDON_LOADED(_, name)
 
 	eventHandler:RegisterEvent('PLAYER_REGEN_ENABLED')
 
-	self:Initialize()
+	self:InitializeSecure()
 end
-eventHandler:RegisterEvent('ADDON_LOADED')
 
-function addon:Initialize()
-	if not self:CanDoSecureStuff('Initialize') then return end
+function addon:InitializeSecure()
+	if not self:CanDoSecureStuff('InitializeSecure') then return end
 
 	local button = CreateFrame("Button", "Squire2Button", nil, "SecureActionButtonTemplate")
 	button:RegisterForClicks("AnyUp")

@@ -99,9 +99,6 @@ function addon:OpenConfig()
 end
 
 function addon:UpdateMountList()
-	-- For some weird reason, the Config addon can be loaded before the main
-	-- addon has ben initialized. If this happens, self.db is nil, so bail out.
-	if not self.db then return end
 	for _, checkbutton in ipairs(checkbuttons) do
 		local id = checkbutton:GetSpellID()
 		if id and id ~= 0 then
@@ -550,5 +547,3 @@ function addon.GetOptions()
 	end
 	return options
 end
-
-addon:InitializeConfig()
