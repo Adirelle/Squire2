@@ -64,6 +64,7 @@ function addon:InitializeConfig()
 	local hook = function() addon:UpdateMountList() end
 	hooksecurefunc('MountJournal_UpdateMountList', hook)
 	hooksecurefunc(scrollFrame, 'update', hook)
+	MountJournal:HookScript('OnShow', self.UpdateSpellButtons)
 
 	for i, button in ipairs(scrollFrame.buttons) do
 		local checkbutton = CheckButton_Create(button, -18, 18)
@@ -79,23 +80,39 @@ function addon:InitializeConfig()
 	panelButton:SetPoint("TOPRIGHT", -2, -22)
 	panelButton:SetScript('OnClick', function() self:OpenConfig() end)
 
-	if addon.mountSpells then
-		for i, id in ipairs(addon.mountSpells) do
-			local spellbutton = SpellButton_Create(id)
-			if i == 1 then
-				spellbutton:SetPoint("BOTTOMLEFT", MountJournal.MountDisplay, "TOPLEFT", 0, 2)
-			else
-				spellbutton:SetPoint("LEFT", spellbuttons[i-1], "RIGHT", 4, 0)
-			end
-			spellbuttons[i] = spellbutton
-		end
-	end
-
 	return addon:UpdateMountList()
 end
 
 function addon:OpenConfig()
 	AceConfigDialog:Open("Squire2")
+end
+
+function addon.UpdateSpellButtons()
+	if not addon.mountSpells then
+		print("UpdateSpellButtons: no spells")
+		return
+	end
+
+	local spells = addon.mountSpells
+	for i = #spellbuttons+1, #spells do
+		local button = SpellButton_Create()
+		if i == 1 then
+			button:SetPoint("BOTTOMLEFT", MountJournal.MountDisplay, "TOPLEFT", 0, 2)
+		else
+			button:SetPoint("LEFT", spellbuttons[i-1], "RIGHT", 4, 0)
+		end
+		spellbuttons[i] = button
+	end
+
+	for i, button in ipairs(spellbuttons) do
+		local id = spells[i]
+		if id then
+			button.spellID = id
+			button:Show()
+		else
+			button:Hide()
+		end
+	end
 end
 
 function addon:UpdateMountList()
@@ -235,10 +252,9 @@ local function SpellButton_OnDragStart(self)
 	PickupSpell(self.spellID)
 end
 
-function SpellButton_Create(spellID)
+function SpellButton_Create()
 	local self = CreateFrame("Button", nil, MountJournal)
 	self:Hide()
-	self.spellID = spellID
 	self:SetSize(37, 37)
 	self:SetScript('OnEnter', SpellButton_OnEnter)
 	self:SetScript('OnLeave', SpellButton_OnLeave)
@@ -256,7 +272,6 @@ function SpellButton_Create(spellID)
 	self.checkbutton:SetScale(0.5)
 	self.checkbutton.knownMount = true
 
-	self:Show()
 	return self
 end
 
