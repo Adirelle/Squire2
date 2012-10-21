@@ -61,9 +61,8 @@ local CheckButton_Create, SpellButton_Create
 function addon:InitializeConfig()
 	local scrollFrame = MountJournal.ListScrollFrame
 
-	local hook = function() addon:UpdateMountList() end
-	hooksecurefunc('MountJournal_UpdateMountList', hook)
-	hooksecurefunc(scrollFrame, 'update', hook)
+	hooksecurefunc('MountJournal_UpdateMountList', self.UpdateMountList)
+	hooksecurefunc(scrollFrame, 'update', self.UpdateMountList)
 	MountJournal:HookScript('OnShow', self.UpdateSpellButtons)
 
 	for i, button in ipairs(scrollFrame.buttons) do
@@ -71,7 +70,7 @@ function addon:InitializeConfig()
 		checkbuttons[i] = checkbutton
 	end
 
-	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", addon.GetOptions)
+	LibStub('AceConfig-3.0'):RegisterOptionsTable("Squire2", self.GetOptions)
 	--AceConfigDialog:SetDefaultSize("Squire2", 600, 500)
 
 	panelButton = CreateFrame("Button", "Squire2ConfigButton", MountJournal, "UIPanelButtonTemplate")
@@ -80,7 +79,7 @@ function addon:InitializeConfig()
 	panelButton:SetPoint("TOPRIGHT", -2, -22)
 	panelButton:SetScript('OnClick', function() self:OpenConfig() end)
 
-	return addon:UpdateMountList()
+	return self.UpdateMountList()
 end
 
 function addon:OpenConfig()
@@ -115,7 +114,11 @@ function addon.UpdateSpellButtons()
 	end
 end
 
-function addon:UpdateMountList()
+function addon.UpdateMountList()
+	if not MountJournal.ListScrollFrame:IsVisible() then
+		return
+	end
+
 	for _, checkbutton in ipairs(checkbuttons) do
 		local id = checkbutton:GetSpellID()
 		if id and id ~= 0 then
@@ -123,7 +126,7 @@ function addon:UpdateMountList()
 			checkbutton.knownMount = ground or air or water
 			if checkbutton.knownMount then
 				checkbutton:Enable()
-				checkbutton:SetChecked(self.db.profile.mounts[id])
+				checkbutton:SetChecked(addon.db.profile.mounts[id])
 			else
 				checkbutton:Disable()
 				checkbutton:SetChecked(false)
@@ -240,7 +243,7 @@ local function SpellButton_OnShow(self)
 		end
 		checkbutton:Show()
 		checkbutton:SetChecked(addon.db.profile.mounts[self.spellID])
-		else
+	else
 		if not icon:SetDesaturated(true) then
 			icon:SetVertexColor(0.5, 0.5, 0.5)
 		end
