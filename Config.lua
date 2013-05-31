@@ -88,7 +88,9 @@ end
 
 function addon.UpdateSpellButtons()
 	if not addon.mountSpells then
+		--[===[@non-debug@
 		print("UpdateSpellButtons: no spells")
+		--@end-non-debug@]===]
 		return
 	end
 
