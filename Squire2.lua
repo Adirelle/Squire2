@@ -830,6 +830,18 @@ elseif playerClass == 'HUNTER' then
 		end
 	end
 
+elseif playerClass == 'MONK' then
+
+	local ROLL = 109132
+	local CELERITY_ROLL = 121827
+
+	addon.mountSpells = { ROLL }
+	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
+		if mountType == GROUND and addon.db.profile.mounts[ROLL] then
+			return 'spell', addon.db.profile.mounts[ROLL] and (knownSpells[CELERITY_ROLL] or knownSpells[ROLL])
+		end
+	end
+
 end
 
 ----------------------------------------------
