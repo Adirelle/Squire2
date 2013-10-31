@@ -834,12 +834,20 @@ elseif playerClass == 'MONK' then
 
 	local ROLL = 109132
 	local CELERITY_ROLL = 121827
+	local ZEN_FLIGHT = 125883
 
-	addon.mountSpells = { ROLL }
+	addon.mountSpells = { ROLL, ZEN_FLIGHT }
+
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
-		if mountType == GROUND and addon.db.profile.mounts[ROLL] then
-			return 'spell', addon.db.profile.mounts[ROLL] and (knownSpells[CELERITY_ROLL] or knownSpells[ROLL])
+		if mountType == AIR and addon.db.profile.mounts[ZEN_FLIGHT] then
+			return 'spell', knownSpells[ZEN_FLIGHT]
+		elseif mountType == GROUND and addon.db.profile.mounts[ROLL] then
+			return 'spell', (knownSpells[CELERITY_ROLL] or knownSpells[ROLL])
 		end
+	end
+
+	function addon:UPDATE_SHAPESHIFT_FORMS()
+		cancelAura = knownSpells[ZEN_FLIGHT]
 	end
 
 end
