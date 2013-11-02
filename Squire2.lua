@@ -843,7 +843,7 @@ elseif playerClass == 'HUNTER' then
 	addon.mountSpells = { CHEETAH_ASPECT }
 	function addon:GetAlternateActionForMount(mountType, isMoving, inCombat, isOutdoors)
 		if mountType == GROUND and addon.db.profile.mounts[CHEETAH_ASPECT] then
-			return 'spell', addon.db.profile.mounts[CHEETAH_ASPECT] and knownSpells[CHEETAH_ASPECT]
+			return 'spell', knownSpells[CHEETAH_ASPECT]
 		end
 	end
 
