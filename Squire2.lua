@@ -99,10 +99,10 @@ local MOUNTS_BY_TYPE = setmetatable({}, {
 		if cat == GROUND and addon.db.profile.restrictGroundMounts then
 			mounts = self["GROUND-ONLY"]
 		elseif cat == "GROUND-ONLY" then
-			local air = self[AIR]
+			local air, water = self[AIR], self[WATER]
 			mounts = {}
 			for id in pairs(LibMounts:GetMountList(GROUND)) do
-				mounts[id] = not air[id]
+				mounts[id] = not air[id] and not water[id]
 			end
 		else
 			mounts = LibMounts:GetMountList(cat)
