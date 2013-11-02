@@ -96,9 +96,16 @@ local AIR, GROUND, WATER = LibMounts.AIR, LibMounts.GROUND, LibMounts.WATER
 local MOUNTS_BY_TYPE = setmetatable({}, {
 	__index = function(self, cat)
 		local mounts
-		if cat == GROUND and addon.db.profile.restrictGroundMounts then
-			mounts = self["GROUND-ONLY"]
-		elseif cat == "GROUND-ONLY" then
+		if cat == "all" then
+			mounts = {}
+			for i, cat in pairs{AIR, GROUND, WATER} do
+				for id in pairs(LibMounts:GetMountList(car)) do
+					mounts[id] = true
+				end
+			end
+		elseif cat == GROUND and addon.db.profile.restrictGroundMounts then
+			mounts = self.ground_only
+		elseif cat == "ground_only" then
 			local air, water = self[AIR], self[WATER]
 			mounts = {}
 			for id in pairs(LibMounts:GetMountList(GROUND)) do
@@ -217,6 +224,8 @@ function addon:InitializeSecure()
 	eventHandler:RegisterEvent('SPELLS_CHANGED')
 	eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
 	eventHandler:RegisterEvent('SKILL_LINES_CHANGED')
+	eventHandler:RegisterUnitEvent('UNIT_SPELLCAST_FAILED', "player")
+	eventHandler:RegisterUnitEvent('UNIT_SPELLCAST_INTERRUPTED', "player")
 
 	if self.UPDATE_SHAPESHIFT_FORMS then
 		eventHandler:RegisterEvent('UPDATE_SHAPESHIFT_FORMS')
@@ -443,6 +452,7 @@ end
 function addon:PLAYER_ENTERING_WORLD(event)
 	return self:SPELLS_CHANGED(event)
 end
+
 ----------------------------------------------
 -- Profession mounts
 ----------------------------------------------
@@ -475,6 +485,13 @@ function addon:COMPANION_UPDATE(event, type)
 		end
 	end
 end
+
+function addon:UNIT_SPELLCAST_FAILED(event, unit, _, _, _, spellId)
+	if MOUNTS_BY_TYPE.all[id] then
+		mountHistory[id] = time()
+	end
+end
+addon.UNIT_SPELLCAST_INTERRUPTED = addon.UNIT_SPELLCAST_FAILED
 
 function addon:ChooseMount(mountType)
 	local mounts = MOUNTS_BY_TYPE[mountType]
