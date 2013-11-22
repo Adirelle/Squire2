@@ -66,7 +66,7 @@ function addon:InitializeConfig()
 	MountJournal:HookScript('OnShow', self.UpdateSpellButtons)
 
 	for i, button in ipairs(scrollFrame.buttons) do
-		local checkbutton = CheckButton_Create(button, -18, 18)
+		local checkbutton = CheckButton_Create(button)
 		checkbuttons[i] = checkbutton
 	end
 
@@ -196,15 +196,25 @@ local function CheckButton_GetSpellID(self)
 	return tonumber(self:GetParent().spellID)
 end
 
-function CheckButton_Create(button, xOffset, yOffset)
-	local checkbutton = CreateFrame("CheckButton", nil, button, "UICheckButtonTemplate")
-	checkbutton:SetPoint("CENTER", button, "BOTTOMRIGHT", xOffset, yOffset)
-	checkbutton:SetScale(0.85)
-	checkbutton:SetScript('OnClick', CheckButton_OnClick)
-	checkbutton:SetScript('OnEnter', CheckButton_OnEnter)
-	checkbutton:SetScript('OnLeave', CheckButton_OnLeave)
+function CheckButton_Create(button)
+	local checkbutton = CreateFrame("CheckButton", nil, button)
+	checkbutton:SetPoint("RIGHT", button, "RIGHT", -5, 0)
+	checkbutton:SetSize(16, 16)
+	checkbutton:SetScale(1.3)
+
+	checkbutton:SetNormalTexture([[Interface\Common\ReputationStar]])
+	checkbutton:GetNormalTexture():SetTexCoord(0.5, 1, 0, 0.5)
+	checkbutton:SetHighlightTexture([[Interface\Common\ReputationStar]])
+	checkbutton:GetHighlightTexture():SetTexCoord(0, 0.5, 0.5, 1)
+	checkbutton:SetCheckedTexture([[Interface\Common\ReputationStar]])
+	checkbutton:GetCheckedTexture():SetTexCoord(0, 0.5, 0, 0.5)
+
 	checkbutton:SetMotionScriptsWhileDisabled(true)
+	checkbutton:SetScript("OnClick", CheckButton_OnClick)
+	checkbutton:SetScript("OnEnter", CheckButton_OnEnter)
+	checkbutton:SetScript("OnLeave", CheckButton_OnLeave)
 	checkbutton.GetSpellID = CheckButton_GetSpellID
+
 	return checkbutton
 end
 
@@ -270,9 +280,16 @@ function SpellButton_Create()
 	self.icon = icon
 	self.icon:SetTexture(icon)
 
-	self.checkbutton = CheckButton_Create(self, -12, 12)
-	self.checkbutton:SetScale(0.5)
-	self.checkbutton.knownMount = true
+	local checkbutton  = CreateFrame("CheckButton", nil, self, "UICheckButtonTemplate")
+	checkbutton:SetPoint("CENTER", self, "BOTTOMRIGHT", -12, 12)
+	checkbutton:SetScale(0.5)
+	checkbutton:SetMotionScriptsWhileDisabled(true)
+	checkbutton:SetScript("OnClick", CheckButton_OnClick)
+	checkbutton:SetScript("OnEnter", CheckButton_OnEnter)
+	checkbutton:SetScript("OnLeave", CheckButton_OnLeave)
+	checkbutton.GetSpellID = CheckButton_GetSpellID
+	checkbutton.knownMount = true
+	self.checkbutton = checkbutton
 
 	return self
 end
